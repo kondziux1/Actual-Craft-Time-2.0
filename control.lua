@@ -338,35 +338,23 @@ local function getRecipeFromFurnaceOutput(entity, playerName)
 	return nil
 end
 
-local function getRecipeFromFurnaceInput(entity)
-	local inventoryContent = next(entity.get_inventory(defines.inventory.furnace_source).get_contents())
-	if not inventoryContent then return nil end
-	local filteredRecipies = prototypes.get_recipe_filtered { { filter = "has-ingredient-item", elem_filters = { { filter = "name", name = inventoryContent } } } }
-	for _, recipe in pairs(filteredRecipies) do
-		if entity.name:find("crusher") and recipe.category == "crushing" then
-			return recipe
-		elseif recipe.category == "smelting" and #recipe.ingredients == 1 then
-			return recipe
-		end
-	end
-end
-
 local function getRecipeFromFurnace(entity, playerName)
 	if entity.type:find("furnace") then
-		local recipe = entity.previous_recipe or getRecipeFromFurnaceInput(entity)
+		if not entity.get_recipe() then return nil end
+		local recipe = entity.previous_recipe or entity.get_recipe()
 		if recipe then
-			globalSliderStorage(playerName, recipe.name.name)
+			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.name.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
 			end
 			return {
-				name = recipe.name.name,
-				localised_name = recipe.name.localised_name,
-				ingredients = expandIngredients(recipe.name.ingredients, sec, playerName, recipe.name.name),
-				products = expandProducts(recipe.name.products, sec, playerName, effects, recipe.name.name),
+				name = recipe.name,
+				localised_name = recipe.localised_name,
+				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
+				products = expandProducts(recipe.products, sec, playerName, effects, recipe.name),
 				seconds = sec,
 				effects = effects,
 				is_capped = is_capped
