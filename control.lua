@@ -341,7 +341,7 @@ end
 local function getRecipeFromFurnaceInput(entity)
 	local inventoryContent = next(entity.get_inventory(defines.inventory.furnace_source).get_contents())
 	if not inventoryContent then return nil end
-	local filteredRecipies = game.get_filtered_recipe_prototypes { { filter = "has-ingredient-item", elem_filters = { { filter = "name", name = inventoryContent } } } }
+	local filteredRecipies = prototypes.get_recipe_filtered { { filter = "has-ingredient-item", elem_filters = { { filter = "name", name = inventoryContent } } } }
 	for _, recipe in pairs(filteredRecipies) do
 		if entity.name:find("crusher") and recipe.category == "crushing" then
 			return recipe
@@ -449,20 +449,20 @@ local function getRecipe(entity, PlayerName)
 	getRecipeFromFurnace(entity, PlayerName) or getRecipeFromLab(entity, PlayerName) or
 	getRecipeFromMiningTarget(entity, PlayerName) or nil
 end
-
+-- player is not used
 local function spriteCheck(player, spritePath)
 	if spritePath then
-		if player.gui.is_valid_sprite_path("item/" .. spritePath) then
+		if helpers.is_valid_sprite_path("item/" .. spritePath) then
 			return "item/" .. spritePath
-		elseif player.gui.is_valid_sprite_path("entity/" .. spritePath) then
+		elseif helpers.is_valid_sprite_path("entity/" .. spritePath) then
 			return "entity/" .. spritePath
-		elseif player.gui.is_valid_sprite_path("technology/" .. spritePath) then
+		elseif helpers.is_valid_sprite_path("technology/" .. spritePath) then
 			return "technology/" .. spritePath
-		elseif player.gui.is_valid_sprite_path("recipe/" .. spritePath) then
+		elseif helpers.is_valid_sprite_path("recipe/" .. spritePath) then
 			return "recipe/" .. spritePath
-		elseif player.gui.is_valid_sprite_path("fluid/" .. spritePath) then
+		elseif helpers.is_valid_sprite_path("fluid/" .. spritePath) then
 			return "fluid/" .. spritePath
-		elseif player.gui.is_valid_sprite_path("utility/" .. spritePath) then
+		elseif helpers.is_valid_sprite_path("utility/" .. spritePath) then
 			return "utility/" .. spritePath
 		end
 	end
