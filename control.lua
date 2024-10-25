@@ -355,7 +355,7 @@ local function getRecipeFromFurnace(entity, playerName)
 	if entity.type:find("furnace") then
 		local recipe = entity.previous_recipe or getRecipeFromFurnaceInput(entity)
 		if recipe then
-			globalSliderStorage(playerName, recipe.name)
+			globalSliderStorage(playerName, recipe.name.name)
 			local effects = getEffects(entity)
 			local sec = recipe.name.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 			local is_capped = false

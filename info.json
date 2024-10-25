@@ -1,10 +1,10 @@
 {
 	"name":"Actual_Craft_Time_2",
-	"author":"osldgoth, kondziux1",
+	"author":"Fipcio660, kondziux1, osldgoth",
 	"version":"0.6.0",
 	"title":"Actual Craft Time 2.0",
-	"homepage":"https://github.com/osldgoth/",
+	"homepage":"https://github.com/kondziux1/Actual-Craft-Time-2.0",
 	"description":"Display actual craft times for assemblers, furnaces and rocket silo, and more",
 	"factorio_version": "2.0",
-	"dependencies": ["base >= 0.17.00", "? boblogistics >= 0.16.00"]
+	"dependencies": ["base >= 2.0.00"]
 }
