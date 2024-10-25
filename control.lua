@@ -275,7 +275,7 @@ local function getEffects(entity)
 	}
 	if entity.effects then
 		if entity.effects.speed then
-			effects.speed.bonus = entity.effects.speed.bonus
+			effects.speed.bonus = entity.effects.speed
 		end
 		if entity.effects.productivity and entity.effects.productivity.bonus > 0 then
 			effects.productivity.bonus = entity.effects.productivity.bonus
@@ -365,8 +365,8 @@ local function getRecipeFromFurnace(entity, playerName)
 			return {
 				name = recipe.name.name,
 				localised_name = recipe.name.localised_name,
-				ingredients = expandIngredients(recipe.name.ingredients, sec, playerName, recipe.name),
-				products = expandProducts(recipe.name.products, sec, playerName, effects, recipe.name),
+				ingredients = expandIngredients(recipe.name.ingredients, sec, playerName, recipe.name.name),
+				products = expandProducts(recipe.name.products, sec, playerName, effects, recipe.name.name),
 				seconds = sec,
 				effects = effects,
 				is_capped = is_capped
@@ -383,7 +383,7 @@ local function getRecipeFromLab(entity, playerName)
 		if research then
 			globalSliderStorage(playerName, research.name)
 			local effects = getEffects(entity)
-			local sec = (research.research_unit_energy / 60) / ((entity.speed_bonus * (entity.force.laboratory_speed_modifier + 1)) * (effects.speed.bonus + 1)) --this may be wrong
+			local sec = (research.research_unit_energy / 60) / ((entity.force.laboratory_speed_modifier + 1) * (effects.speed.bonus + 1)) -- blind fix
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
@@ -906,6 +906,7 @@ local function playerClickedGui(event)
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player then return end
+	findPrototypeData(player)
 	local elementName = event.element.name
 	if elementName == "recipeSprite" then
 		resetACT(event)
