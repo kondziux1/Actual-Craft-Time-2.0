@@ -29,30 +29,30 @@ local function amountMaxMinAverage(product)
 end
 
 local function getLocalisedName(name)
-	if game.recipe_prototypes[name] then
-		return game.recipe_prototypes[name].localised_name
+	if prototypes.recipe[name] then
+		return prototypes.recipe[name].localised_name
 	end
-	if game.entity_prototypes[name] then
-		return game.entity_prototypes[name].localised_name
+	if prototypes.entity[name] then
+		return prototypes.entity[name].localised_name
 	end
-	if game.fluid_prototypes[name] then
-		return game.fluid_prototypes[name].localised_name
+	if prototypes.fluid[name] then
+		return prototypes.fluid[name].localised_name
 	end
-	if game.item_prototypes[name] then
-		return game.item_prototypes[name].localised_name
+	if prototypes.item[name] then
+		return prototypes.item[name].localised_name
 	end
 	return name
 end
 
 local function globalSliderStorage(playerName, recipeName)
-	if not global.ACT_slider then
-		global.ACT_slider = {}
+	if not storage.ACT_slider then
+		storage.ACT_slider = {}
 	end
-	if not global.ACT_slider[playerName] then
-		global.ACT_slider[playerName] = {}
+	if not storage.ACT_slider[playerName] then
+		storage.ACT_slider[playerName] = {}
 	end
-	if not global.ACT_slider[playerName][recipeName] then
-		global.ACT_slider[playerName][recipeName] = { value = 1 }
+	if not storage.ACT_slider[playerName][recipeName] then
+		storage.ACT_slider[playerName][recipeName] = { value = 1 }
 	end
 end
 
@@ -61,94 +61,114 @@ local function pbarTraits(IPS, playerName)
 	local belt = ""
 	local color = {}
 	local value = 0
-	local tool = ""
+	local tool = {}
 	-- may contain mod belts, bob's/better etc.
 	if bltsInts[playerName].source["basic-transport-belt"] and  --Bobs - 7.5
 		IPS <= bltsInts[playerName].source["basic-transport-belt"] then
 		belt = "basic-transport-belt"
 		color = { r = 0.15, g = 0.15, b = 0.15 } --38, 38, 38
 		value = IPS / bltsInts[playerName].source["basic-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["basic-transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["basic-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif IPS <= bltsInts[playerName].source["transport-belt"] then --vanilla - 15
 		belt = "transport-belt"
 		color = { r = 0.98, g = 0.73, b = 0.0 }                   -- 250, 186, 0
 		value = IPS / bltsInts[playerName].source["transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif IPS <= bltsInts[playerName].source["fast-transport-belt"] then --vanilla - 30
 		belt = "fast-transport-belt"
 		color = { r = 0.98, g = 0.27, b = 0.06 }                       -- 250, 69, 15
 		value = IPS / bltsInts[playerName].source["fast-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["fast-transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["fast-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif IPS <= bltsInts[playerName].source["express-transport-belt"] then --vanilla - 45
 		belt = "express-transport-belt"
 		color = { r = 0.15, g = 0.67, b = 0.71 }                          -- 38, 171, 181
 		value = IPS / bltsInts[playerName].source["express-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["express-transport-belt"] * 100, 2)), game.item_prototypes[belt]
-			.localised_name }
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["5d-mk4-transport-belt"] and --5dim - 57.6
 		IPS <= bltsInts[playerName].source["5d-mk4-transport-belt"] then
 		belt = "5d-mk4-transport-belt"
 		color = { r = 0.08, g = 0.66, b = 0.14 } -- 20, 168, 36
-		value = IPS / bltsInts[playerName].source["5d-mk4-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["5d-mk4-transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		value = IPS / bltsInts[playerName].source["5d-mk4-transport-bet"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["5d-mk4-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["turbo-transport-belt"] and --Bobs - 60
 		IPS <= bltsInts[playerName].source["turbo-transport-belt"] then
 		belt = "turbo-transport-belt"
 		color = { r = 0.97, g = 0.07, b = 1.0 } -- 247, 18, 255  purple
-		value = IPS / bltsInts[playerName].source["turbo-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["turbo-transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		value = IPS / bltsInts[playerName].source["turbo-transport-blt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["turbo-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["kr-advanced-transport-belt"] and --Kr - 60
 		IPS <= bltsInts[playerName].source["kr-advanced-transport-belt"] then
 		belt = "kr-advanced-transport-belt"
 		color = { r = 0.13, g = 0.92, b = 0.09 } -- 34, 235, 23  green
-		value = IPS / bltsInts[playerName].source["kr-advanced-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["kr-advanced-transport-belt"] * 100, 2)), game.item_prototypes[belt]
-			.localised_name }
+		value = IPS / bltsInts[playerName].source["kr-dvanced-transport-belt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["kr-advanced-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["5d-mk5-transport-belt"] and --5dim - 72
 		IPS <= bltsInts[playerName].source["5d-mk5-transport-belt"] then
 		belt = "5d-mk5-transport-belt"
 		color = { r = 0.89, g = 0.91, b = 0.96 } -- 227, 232, 245
-		value = IPS / bltsInts[playerName].source["5d-mk5-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["5d-mk5-transport-belt"] * 100, 2)), game.item_prototypes[belt].localised_name }
+		value = IPS / bltsInts[playerName].source["5d-mk5-transpor-belt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["5d-mk5-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["ultimate-transport-belt"] and --Bobs - 75
 		IPS <= bltsInts[playerName].source["ultimate-transport-belt"] then
 		belt = "ultimate-transport-belt"
 		color = { r = 0.07, g = 1.0, b = 0.62 } -- 18, 255, 158 green
-		value = IPS / bltsInts[playerName].source["ultimate-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["ultimate-transport-belt"] * 100, 2)), game.item_prototypes[belt]
-			.localised_name }
+		value = IPS / bltsInts[playerName].source["ultimate-tansport-belt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["ultimate-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["kr-superior-transport-belt"] and --Kr- 90
 		IPS <= bltsInts[playerName].source["kr-superior-transport-belt"] then
 		belt = "kr-superior-transport-belt"
 		color = { r = 0.82, g = 0.00, b = 0.97 } -- 210, 1, 247 purple--*********************
-		value = IPS / bltsInts[playerName].source["kr-superior-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["kr-superior-transport-belt"] * 100, 2)), game.item_prototypes[belt]
-			.localised_name }
+		value = IPS / bltsInt[playerName].source["kr-superior-transport-belt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["kr-superior-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] and --Better Belts - 96
 		IPS <= bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] then
 		belt = "BetterBelts_ultra-transport-belt"
 		color = { r = .22, g = .84, b = .11 } --56, 213, 27 green
-		value = IPS / bltsInts[playerName].source["BetterBelts_ultra-transport-belt"]
-		tool = { "tooltips.percent-of", tostring(truncateNumber(
-		IPS / bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] * 100, 2)), game.item_prototypes[belt]
-			.localised_name }
+		value = IPS / bltInts[playerName].source["BetterBelts_ultra-transport-belt"]
+		tool = { "tooltips.percent-of",
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] * 100, 2)),
+				prototypes.item[belt].localised_name }
 	else
 		--game.print("ips is inf")
 		belt = "express-transport-belt"
 		color = { r = 1, g = 1, b = 1 }                                                                                                                      --white
-		value = IPS / bltsInts[playerName].source["express-transport-belt"]
-		tool = { '', tostring(truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"], 2)), " ", game
-			.item_prototypes[belt].localised_name, "s" }                                                                                                     --plural will be a problem
+		value = IPS / bltsInts[playerName].source["express-transport-elt"]
+		tool = { '',
+		tostring(
+			truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"], 2)),
+				" ",
+				prototypes.item[belt].localised_name, "s" }                                                                                                     --plural will be a problem
 	end
 	return { belt = belt, color = color, value = value, tool = tool }
 end
@@ -187,7 +207,7 @@ local function expandIngredients(ingredients, sec, playerName, recipeName)
 		ingredientTable[k] = ingredient
 		ingredientTable[k].localised_name = getLocalisedName(ingredient.name)
 		ingredientTable[k].ips = IPS
-		ingredientTable[k].pbar = pbarTraits(IPS * global.ACT_slider[playerName][recipeName].value, playerName)
+		ingredientTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
 	end
 	return ingredientTable
 end
@@ -199,29 +219,26 @@ local function expandProducts(products, sec, playerName, effects, recipeName)
 	for k, product in pairs(products) do
 		local amount = product.amount or amountMaxMinAverage(product) or 1
 		local expectedAmount = (product.probability or 1) * amount
-		local IPS_main = expectedAmount / math.max(sec, 1 / 60)              -- recipes can be executed only once per tick
-		local IPS_productivity = expectedAmount * effects.productivity.bonus /
-		sec                                                                  -- productivity bonus does not have cap
+		local IPS_main = expectedAmount / math.max(sec, 1 / 60)                      -- recipes can be executed only once per tick
+		local IPS_productivity = expectedAmount * effects.productivity.bonus / sec   -- productivity bonus does not have cap
 		local IPS = IPS_main + IPS_productivity
 		productTable[k] = product
 		productTable[k].localised_name = getLocalisedName(product.name)
 		productTable[k].ips = IPS
-		productTable[k].pbar = pbarTraits(IPS * global.ACT_slider[playerName][recipeName].value, playerName)
+		productTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
 	end
 	if recipeName == "rocket-part" then
-		local expectedAmount = 10                                            --if a mod changes how many space-science-pack's in the rocket-part recipe then this will be wrong - need to figure out how/where to pull it from game data
-		local IPS_main = expectedAmount / math.max(sec, 1 / 60)              -- recipes can be executed only once per tick
-		local IPS_productivity = expectedAmount * effects.productivity.bonus /
-		sec                                                                  -- productivity bonus does not have cap
+		local expectedAmount = 10  --if a mod changes how many space-science-pack's in the rocket-part recipe then this will be wrong - need to figure out how/where to pull it from game data
+		local IPS_main = expectedAmount / math.max(sec, 1 / 60) -- recipes can be executed only once per tick
+		local IPS_productivity = expectedAmount * effects.productivity.bonus / sec   -- productivity bonus does not have cap
 		local IPS = IPS_main + IPS_productivity
-		--local IPS = (10 * (effects.productivity.bonus + 1)) / sec
 		productTable[#products + 1] = {
 			amount = 10,
 			name = "space-science-pack",
 			type = "item",
 			localised_name = getLocalisedName("space-science-pack"),
 			ips = IPS,
-			pbar = pbarTraits(IPS * global.ACT_slider[playerName][recipeName].value, playerName)
+			pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
 		}
 	end
 	return productTable
@@ -244,7 +261,7 @@ local function expandProductsMines(products, sec, playerName, effects, recipeNam
 		productTable[k] = product
 		productTable[k].localised_name = getLocalisedName(product.name)
 		productTable[k].ips = IPS
-		productTable[k].pbar = pbarTraits(IPS * global.ACT_slider[playerName][recipeName].value, playerName)
+		productTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
 	end
 	return productTable
 end
@@ -262,11 +279,6 @@ local function getEffects(entity)
 		end
 		if entity.effects.productivity and entity.effects.productivity.bonus > 0 then
 			effects.productivity.bonus = entity.effects.productivity.bonus
-			-- if (entity.effects.productivity.bonus < 0) then
-			-- effects.productivity.bonus = 0
-			-- else
-
-			-- end
 		end
 	end
 	return effects
@@ -280,7 +292,7 @@ local function getRecipeFromEntity(entity, playerName)
 			local recipeProducts = copyProductsForWriteControl(recipe)
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.prototype.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
@@ -302,11 +314,11 @@ end
 local function getRecipeFromFurnaceOutput(entity, playerName)
 	if entity.type:find("furnace") then
 		for item, _ in pairs(entity.get_output_inventory().get_contents()) do --can get several *oil*?
-			local recipe = game.recipe_prototypes[item]
+			local recipe = prototypes.recipe[item]
 			if recipe then
 				globalSliderStorage(playerName, recipe.name)
 				local effects = getEffects(entity)
-				local sec = recipe.energy / (entity.prototype.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+				local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 				local is_capped = false
 				if sec < (1 / 60) then
 					is_capped = true
@@ -345,7 +357,7 @@ local function getRecipeFromFurnace(entity, playerName)
 		if recipe then
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.prototype.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
@@ -464,7 +476,7 @@ local function findPrototypeData(playerName)
 	if not bltsInts[playerName] then
 		bltsInts[playerName] = { source = {} }
 	end
-	for k, v in pairs(game.entity_prototypes) do
+	for k, v in pairs(prototypes.entity) do
 		if k:find("transport%-belt") and not k:find("ground") and v.belt_speed then
 			bltsInts[playerName].source[k] = ((60 * v.belt_speed) / (1 / 8)) -- I don't remember why it needs 8/64(1/8) but it does: 8 items per tile?
 		end
@@ -511,7 +523,7 @@ local function guiVisibleAttrDescend(currentGuiSection, bool)
 	if currentGuiSection == nil or not next(currentGuiSection) then return end --invalid or an enpty table
 	local player = game.players[currentGuiSection.player_index]
 	if not player then return end
-	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == global.settings[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
+	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.settings[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
 		guiVisibleAttrAscend(currentGuiSection.parent, bool)
 	end
 	currentGuiSection.visible = bool
@@ -523,28 +535,28 @@ end
 
 local function settings(player)
 	if not player then return end
-	if not global.settings then
-		global.settings = {}
+	if not storage.settings then
+		storage.settings = {}
 	end
-	if not global.settings[player.name] then
-		global.settings[player.name] = {
+	if not storage.settings[player.name] then
+		storage.settings[player.name] = {
 			["gui-location"] = player.mod_settings["ACT-Gui-Location"].value,
 			["simple-text"] = player.mod_settings["ACT-simple-text"].value,
 			["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value,
 			["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value,
 		}
 	else --check for changes
-		if global.settings[player.name]["gui-location"] ~= player.mod_settings["ACT-Gui-Location"].value then
-			global.settings[player.name]["gui-location"] = player.mod_settings["ACT-Gui-Location"].value
+		if storage.settings[player.name]["gui-location"] ~= player.mod_settings["ACT-Gui-Location"].value then
+			storage.settings[player.name]["gui-location"] = player.mod_settings["ACT-Gui-Location"].value
 		end
-		if global.settings[player.name]["simple-text"] ~= player.mod_settings["ACT-simple-text"].value then
-			global.settings[player.name]["simple-text"] = player.mod_settings["ACT-simple-text"].value
+		if storage.settings[player.name]["simple-text"] ~= player.mod_settings["ACT-simple-text"].value then
+			storage.settings[player.name]["simple-text"] = player.mod_settings["ACT-simple-text"].value
 		end
-		if global.settings[player.name]["max-slider-value"] ~= player.mod_settings["ACT-max-slider-value"].value then
-			global.settings[player.name]["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value
+		if storage.settings[player.name]["max-slider-value"] ~= player.mod_settings["ACT-max-slider-value"].value then
+			storage.settings[player.name]["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value
 		end
-		if global.settings[player.name]["sensitivity-value"] ~= player.mod_settings["ACT-slider-sensitivity"].value then
-			global.settings[player.name]["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value
+		if storage.settings[player.name]["sensitivity-value"] ~= player.mod_settings["ACT-slider-sensitivity"].value then
+			storage.settings[player.name]["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value
 		end
 	end
 end
@@ -554,7 +566,7 @@ local function closeGui(event)
 	local player = game.players[playerIndex]
 	if not player then return end
 	settings(player)
-	local guiLocation = global.settings[player.name]["gui-location"]
+	local guiLocation = storage.settings[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation]
 	guiVisibleAttrDescend(playersGui["ACT_frame_" .. playersGui.player_index], false)
 end
@@ -588,7 +600,7 @@ local function updateItem(recipe, items, current_section, minOrSec)
 
 		guiElementInfoWrap_K.itemIPSWrap.item_sprite.tooltip = v.localised_name or v.name
 		guiElementInfoWrap_K.itemIPSWrap.IPSLabel.caption = { '', truncateNumber(
-		v.ips * global.ACT_slider[player.name][recipe.name].value * minOrSec.value, 2), minOrSec.time }
+		v.ips * storage.ACT_slider[player.name][recipe.name].value * minOrSec.value, 2), minOrSec.time }
 		if v.probability and v.probability < 1 then
 			guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = v.probability * 100 .. "%"
 		else
@@ -720,12 +732,12 @@ local function setupGui(player, playersGui)
 	machine_group.add { type = "flow" --[[X--]], name = "sliderSection", direction = "horizontal", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "sprite-button", name = "Sub5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" }, sprite = spriteCheck(player, "editor_speed_down"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', global.settings[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.settings[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
 
-	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = global.settings[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = storage.settings[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
 	--*** --[[ value = 0,--]]--[[truncateNumber(0--[[sliderValue--]], 0)--]]
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', global.settings[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+5", global.settings[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.settings[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.settings[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT_buttons", visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "label", name = "sliderLabel", caption = "", visible = false --[[*--]] }
 end
@@ -742,7 +754,7 @@ local function run(event)
 	local player = game.players[playerIndex]
 	if not player then return end
 	settings(player)
-	local guiLocation = global.settings[player.name]["gui-location"]
+	local guiLocation = storage.settings[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 
 	if not playersGui["ACT_frame_" .. playerIndex] then
@@ -784,7 +796,7 @@ local function run(event)
 	end
 
 	local machine_group = playersGui["ACT_frame_" .. playersGui.player_index].machineGroup
-	updateMachine(machine_group, truncateNumber(global.ACT_slider[player.name][recipe.name].value, 0), entity)
+	updateMachine(machine_group, truncateNumber(storage.ACT_slider[player.name][recipe.name].value, 0), entity)
 end
 
 local function resetACT(event)
@@ -803,7 +815,7 @@ local function changeGuiSliderButtons(event)
 	if not player then return end
 	local elementName = event.element.name
 
-	local guiLocation = global.settings[player.name]["gui-location"]
+	local guiLocation = storage.settings[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left
 	local entity = player.opened
 	if not entity then return end
@@ -811,55 +823,55 @@ local function changeGuiSliderButtons(event)
 	if not recipe then return end
 	if shi and not alt and not con then --click with keyboard
 		if elementName:find("Sub5") then -- -25
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -25
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -25
 		elseif elementName:find("Sub1") then -- -10
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -10
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -10
 		elseif elementName:find("Add1") then -- +10
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 10
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 10
 		elseif elementName:find("Add5") then -- +25
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 25
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 25
 		end
 	elseif shi and con and not alt then --click with keyboard
 		if elementName:find("Sub5") then -- -31
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -31
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -31
 		elseif elementName:find("Sub1") then -- -7
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -7
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -7
 		elseif elementName:find("Add1") then -- +7
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 7
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 7
 		elseif elementName:find("Add5") then -- +31
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 31
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 31
 		end
 	elseif con and not shi and not alt then --click with keyboard
-		local settingMaxSliderValue = global.settings[player.name]["max-slider-value"]
+		local settingMaxSliderValue = storage.settings[player.name]["max-slider-value"]
 		if elementName:find("Sub5") then -- down to 1
-			global.ACT_slider[player.name][recipe.name].value = 1
+			storage.ACT_slider[player.name][recipe.name].value = 1
 		elseif elementName:find("Sub1") then -- down to 50%
-			if global.ACT_slider[player.name][recipe.name].value >= settingMaxSliderValue / 2 then
-				global.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
+			if storage.ACT_slider[player.name][recipe.name].value >= settingMaxSliderValue / 2 then
+				storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
 			end
 		elseif elementName:find("Add1") then -- up   to 50%
-			if global.ACT_slider[player.name][recipe.name].value <= settingMaxSliderValue / 2 then
-				global.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
+			if storage.ACT_slider[player.name][recipe.name].value <= settingMaxSliderValue / 2 then
+				storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
 			end
 		elseif elementName:find("Add5") then -- up   to max
-			global.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue
+			storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue
 		end
 	elseif not shi and not alt and not con then --normal click
 		if elementName:find("Sub5") then     -- -5
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -5
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -5
 		elseif elementName:find("Sub1") then -- -1
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + -1
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -1
 		elseif elementName:find("Add1") then -- +1
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 1
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 1
 		elseif elementName:find("Add5") then -- +5
-			global.ACT_slider[player.name][recipe.name].value = global.ACT_slider[player.name][recipe.name].value + 5
+			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 5
 		end
 	end
 
-	if global.ACT_slider[player.name][recipe.name].value < 1 then
-		global.ACT_slider[player.name][recipe.name].value = 1
-	elseif global.ACT_slider[player.name][recipe.name].value > global.settings[player.name]["max-slider-value"] then
-		global.ACT_slider[player.name][recipe.name].value = global.settings[player.name]["max-slider-value"]
+	if storage.ACT_slider[player.name][recipe.name].value < 1 then
+		storage.ACT_slider[player.name][recipe.name].value = 1
+	elseif storage.ACT_slider[player.name][recipe.name].value > storage.settings[player.name]["max-slider-value"] then
+		storage.ACT_slider[player.name][recipe.name].value = storage.settings[player.name]["max-slider-value"]
 	end
 	event.gui_type = defines.gui_type.entity
 	event.entity = entity
@@ -876,9 +888,9 @@ local function playerSlid(event)
 
 	local recipe = getRecipe(entity, player.name)
 	if not recipe then return end
-	if global.ACT_slider[player.name][recipe.name] then
-		if not (math.abs(global.ACT_slider[player.name][recipe.name].value - event.element.slider_value) >= global.settings[player.name]["sensitivity-value"] / 10) then return end
-		global.ACT_slider[player.name][recipe.name].value = event.element.slider_value
+	if storage.ACT_slider[player.name][recipe.name] then
+		if not (math.abs(storage.ACT_slider[player.name][recipe.name].value - event.element.slider_value) >= storage.settings[player.name]["sensitivity-value"] / 10) then return end
+		storage.ACT_slider[player.name][recipe.name].value = event.element.slider_value
 
 		event.entity = player.opened
 		event.gui_type = defines.gui_type.entity
@@ -933,7 +945,7 @@ local function customInputForRadioButton(event)
 	local player = game.players[playerIndex]
 	if not player then return end
 	settings(player)
-	local guiLocation = global.settings[player.name]["gui-location"]
+	local guiLocation = storage.settings[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 	if not playersGui["ACT_frame_" .. playerIndex] then
 		setupGui(player, playersGui)
