@@ -277,8 +277,8 @@ local function getEffects(entity)
 		if entity.effects.speed then
 			effects.speed.bonus = entity.effects.speed
 		end
-		if entity.effects.productivity and entity.effects.productivity.bonus > 0 then
-			effects.productivity.bonus = entity.effects.productivity.bonus
+		if entity.effects.productivity and entity.effects.productivity > 0 then
+			effects.productivity.bonus = entity.effects.productivity
 		end
 	end
 	return effects
@@ -292,7 +292,7 @@ local function getRecipeFromEntity(entity, playerName)
 			local recipeProducts = copyProductsForWriteControl(recipe)
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			local sec = recipe.energy / (entity.crafting_speed * (recipe.productivity_bonus+1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
