@@ -383,8 +383,7 @@ local function getRecipeFromLab(entity, playerName)
 		if research then
 			globalSliderStorage(playerName, research.name)
 			local effects = getEffects(entity)
-			local sec = (research.research_unit_energy / 60) /
-			((entity.prototype.researching_speed * (entity.force.laboratory_speed_modifier + 1)) * (effects.speed.bonus + 1))
+			local sec = (research.research_unit_energy / 60) / ((entity.speed_bonus * (entity.force.laboratory_speed_modifier + 1)) * (effects.speed.bonus + 1)) --this may be wrong
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
