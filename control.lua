@@ -523,7 +523,7 @@ local function guiVisibleAttrDescend(currentGuiSection, bool)
 	if currentGuiSection == nil or not next(currentGuiSection) then return end --invalid or an enpty table
 	local player = game.players[currentGuiSection.player_index]
 	if not player then return end
-	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.settings[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
+	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.ACT2[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
 		guiVisibleAttrAscend(currentGuiSection.parent, bool)
 	end
 	currentGuiSection.visible = bool
@@ -533,30 +533,30 @@ local function guiVisibleAttrDescend(currentGuiSection, bool)
 	end
 end
 
-local function settings(player)
+local function setsettings(player)
 	if not player then return end
-	if not storage.settings then
-		storage.settings = {}
+	if not storage.ACT2 then
+		storage.ACT2 = {}
 	end
-	if not storage.settings[player.name] then
-		storage.settings[player.name] = {
+	if not storage.ACT2[player.name] then
+		storage.ACT2[player.name] = {
 			["gui-location"] = player.mod_settings["ACT-Gui-Location"].value,
 			["simple-text"] = player.mod_settings["ACT-simple-text"].value,
 			["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value,
 			["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value,
 		}
 	else --check for changes
-		if storage.settings[player.name]["gui-location"] ~= player.mod_settings["ACT-Gui-Location"].value then
-			storage.settings[player.name]["gui-location"] = player.mod_settings["ACT-Gui-Location"].value
+		if storage.ACT2[player.name]["gui-location"] ~= player.mod_settings["ACT-Gui-Location"].value then
+			storage.ACT2[player.name]["gui-location"] = player.mod_settings["ACT-Gui-Location"].value
 		end
-		if storage.settings[player.name]["simple-text"] ~= player.mod_settings["ACT-simple-text"].value then
-			storage.settings[player.name]["simple-text"] = player.mod_settings["ACT-simple-text"].value
+		if storage.ACT2[player.name]["simple-text"] ~= player.mod_settings["ACT-simple-text"].value then
+			storage.ACT2[player.name]["simple-text"] = player.mod_settings["ACT-simple-text"].value
 		end
-		if storage.settings[player.name]["max-slider-value"] ~= player.mod_settings["ACT-max-slider-value"].value then
-			storage.settings[player.name]["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value
+		if storage.ACT2[player.name]["max-slider-value"] ~= player.mod_settings["ACT-max-slider-value"].value then
+			storage.ACT2[player.name]["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value
 		end
-		if storage.settings[player.name]["sensitivity-value"] ~= player.mod_settings["ACT-slider-sensitivity"].value then
-			storage.settings[player.name]["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value
+		if storage.ACT2[player.name]["sensitivity-value"] ~= player.mod_settings["ACT-slider-sensitivity"].value then
+			storage.ACT2[player.name]["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value
 		end
 	end
 end
@@ -565,8 +565,8 @@ local function closeGui(event)
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player then return end
-	settings(player)
-	local guiLocation = storage.settings[player.name]["gui-location"]
+	setsettings(player)
+	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation]
 	guiVisibleAttrDescend(playersGui["ACT_frame_" .. playersGui.player_index], false)
 end
@@ -732,12 +732,12 @@ local function setupGui(player, playersGui)
 	machine_group.add { type = "flow" --[[X--]], name = "sliderSection", direction = "horizontal", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "sprite-button", name = "Sub5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" }, sprite = spriteCheck(player, "editor_speed_down"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.settings[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
 
-	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = storage.settings[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = storage.ACT2[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
 	--*** --[[ value = 0,--]]--[[truncateNumber(0--[[sliderValue--]], 0)--]]
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.settings[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.settings[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.ACT2[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT_buttons", visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "label", name = "sliderLabel", caption = "", visible = false --[[*--]] }
 end
@@ -753,8 +753,8 @@ local function run(event)
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player then return end
-	settings(player)
-	local guiLocation = storage.settings[player.name]["gui-location"]
+	setsettings(player)
+	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 
 	if not playersGui["ACT_frame_" .. playerIndex] then
@@ -815,7 +815,7 @@ local function changeGuiSliderButtons(event)
 	if not player then return end
 	local elementName = event.element.name
 
-	local guiLocation = storage.settings[player.name]["gui-location"]
+	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left
 	local entity = player.opened
 	if not entity then return end
@@ -842,7 +842,7 @@ local function changeGuiSliderButtons(event)
 			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 31
 		end
 	elseif con and not shi and not alt then --click with keyboard
-		local settingMaxSliderValue = storage.settings[player.name]["max-slider-value"]
+		local settingMaxSliderValue = storage.ACT2[player.name]["max-slider-value"]
 		if elementName:find("Sub5") then -- down to 1
 			storage.ACT_slider[player.name][recipe.name].value = 1
 		elseif elementName:find("Sub1") then -- down to 50%
@@ -870,8 +870,8 @@ local function changeGuiSliderButtons(event)
 
 	if storage.ACT_slider[player.name][recipe.name].value < 1 then
 		storage.ACT_slider[player.name][recipe.name].value = 1
-	elseif storage.ACT_slider[player.name][recipe.name].value > storage.settings[player.name]["max-slider-value"] then
-		storage.ACT_slider[player.name][recipe.name].value = storage.settings[player.name]["max-slider-value"]
+	elseif storage.ACT_slider[player.name][recipe.name].value > storage.ACT2[player.name]["max-slider-value"] then
+		storage.ACT_slider[player.name][recipe.name].value = storage.ACT2[player.name]["max-slider-value"]
 	end
 	event.gui_type = defines.gui_type.entity
 	event.entity = entity
@@ -889,7 +889,7 @@ local function playerSlid(event)
 	local recipe = getRecipe(entity, player.name)
 	if not recipe then return end
 	if storage.ACT_slider[player.name][recipe.name] then
-		if not (math.abs(storage.ACT_slider[player.name][recipe.name].value - event.element.slider_value) >= storage.settings[player.name]["sensitivity-value"] / 10) then return end
+		if not (math.abs(storage.ACT_slider[player.name][recipe.name].value - event.element.slider_value) >= storage.ACT2[player.name]["sensitivity-value"] / 10) then return end
 		storage.ACT_slider[player.name][recipe.name].value = event.element.slider_value
 
 		event.entity = player.opened
@@ -944,8 +944,8 @@ local function customInputForRadioButton(event)
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player then return end
-	settings(player)
-	local guiLocation = storage.settings[player.name]["gui-location"]
+	setsettings(player)
+	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 	if not playersGui["ACT_frame_" .. playerIndex] then
 		setupGui(player, playersGui)
@@ -958,10 +958,10 @@ end
 
 local function modChange(event)
 	if event.mod_changes == nil then return end
-	if event.mod_changes.Actual_Craft_Time == nil then return end
+	if event.mod_changes.Actual_Craft_Time_2 == nil then return end
 
-	local previousOldACTModVersion = event.mod_changes.Actual_Craft_Time.old_version
-	local currentNewACTModVersion = event.mod_changes.Actual_Craft_Time.new_version
+	local previousOldACTModVersion = event.mod_changes.Actual_Craft_Time_2.old_version
+	local currentNewACTModVersion = event.mod_changes.Actual_Craft_Time_2.new_version
 
 	if previousOldACTModVersion == nil then return end --mod was installed previously
 	if currentNewACTModVersion == nil then return end --mod removed ¯\_(ツ)_/¯
