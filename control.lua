@@ -199,11 +199,11 @@ local function copyProductsForWriteControl(recipe)
 	return products
 end
 
-local function expandIngredients(ingredients, sec, playerName, recipeName)
+local function expandIngredients(ingredients, sec, playerName, recipeName, recipe_bonus)
 	if not playerName then return {} end --hopefully this never happens
 	local ingredientTable = {}
 	for k, ingredient in pairs(ingredients) do
-		local IPS = ingredient.amount / math.max(sec, 1 / 60) -- ingredient amount is also capped by tick
+		local IPS = (ingredient.amount / math.max(sec, 1 / 60)) / (recipe_bonus + 1)  -- ingredient amount is also capped by tick
 		ingredientTable[k] = ingredient
 		ingredientTable[k].localised_name = getLocalisedName(ingredient.name)
 		ingredientTable[k].ips = IPS
@@ -289,10 +289,11 @@ local function getRecipeFromEntity(entity, playerName)
 		entity.type:find("rocket%-silo") then
 		local recipe = entity.get_recipe()
 		if recipe then
+			local recipe_bonus = recipe.productivity_bonus
 			local recipeProducts = copyProductsForWriteControl(recipe)
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.crafting_speed * (recipe.productivity_bonus+1)) --x(y+1)
+			local sec = recipe.energy / (entity.crafting_speed * (recipe_bonus + 1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
@@ -301,7 +302,7 @@ local function getRecipeFromEntity(entity, playerName)
 			return {
 				name = recipe.name,
 				localised_name = recipe.localised_name,
-				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
+				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name, recipe_bonus),
 				products = expandProducts(recipeProducts, sec, playerName, effects, recipe.name),
 				seconds = sec,
 				effects = effects,
