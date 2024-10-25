@@ -4,7 +4,7 @@ data:extend({
 		name = "ACT-Gui-Location",
 		setting_type = "runtime-per-user",
 		default_value = "top",
-		allowed_values = {"top", "left"}
+		allowed_values = { "top", "left" }
 	},
 	{
 		type = "bool-setting",

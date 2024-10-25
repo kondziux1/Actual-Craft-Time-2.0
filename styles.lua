@@ -4,7 +4,7 @@ default_style.ACT_buttons = {
   type = "button_style",
   --parent = "slot_button",
 
-	scalable = false,
+  scalable = false,
 
   top_padding = 0,
   right_padding = 0,
@@ -15,9 +15,9 @@ default_style.ACT_buttons = {
   width = 20,
 }
 
- default_style.ACT_vertical_flow = {
-			type = "vertical_flow_style",
-			vertical_spacing = 10,
-			top_padding = 6,
-		}
+default_style.ACT_vertical_flow = {
+  type = "vertical_flow_style",
+  vertical_spacing = 10,
+  top_padding = 6,
+}
 -- }
