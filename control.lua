@@ -341,7 +341,7 @@ end
 local function getRecipeFromFurnace(entity, playerName)
 	if entity.type:find("furnace") then
 		if not entity.get_recipe() then return nil end
-		local recipe = entity.previous_recipe or entity.get_recipe()
+		local recipe = entity.get_recipe()
 		if recipe then
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
