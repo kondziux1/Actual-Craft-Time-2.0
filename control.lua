@@ -100,7 +100,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["5d-mk4-transport-belt"] then
 		belt = "5d-mk4-transport-belt"
 		color = { r = 0.08, g = 0.66, b = 0.14 } -- 20, 168, 36
-		value = IPS / bltsInts[playerName].source["5d-mk4-transport-bet"]
+		value = IPS / bltsInts[playerName].source["5d-mk4-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["5d-mk4-transport-belt"] * 100, 2)),
@@ -109,7 +109,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["turbo-transport-belt"] then
 		belt = "turbo-transport-belt"
 		color = { r = 0.97, g = 0.07, b = 1.0 } -- 247, 18, 255  purple
-		value = IPS / bltsInts[playerName].source["turbo-transport-blt"]
+		value = IPS / bltsInts[playerName].source["turbo-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["turbo-transport-belt"] * 100, 2)),
@@ -318,16 +318,16 @@ local function getRecipeFromFurnaceOutput(entity, playerName)
 			if recipe then
 				globalSliderStorage(playerName, recipe.name)
 				local effects = getEffects(entity)
-				local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+				local sec = recipe.name.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 				local is_capped = false
 				if sec < (1 / 60) then
 					is_capped = true
 				end
 				return {
-					name = recipe.name,
-					localised_name = recipe.localised_name,
-					ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
-					products = expandProducts(recipe.products, sec, playerName, effects, recipe.name),
+					name = recipe.name.name,
+					localised_name = recipe.name.localised_name,
+					ingredients = expandIngredients(recipe.name.ingredients, sec, playerName, recipe.name),
+					products = expandProducts(recipe.name.products, sec, playerName, effects, recipe.name),
 					seconds = sec,
 					effects = effects,
 					is_capped = is_capped
@@ -357,16 +357,16 @@ local function getRecipeFromFurnace(entity, playerName)
 		if recipe then
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			local sec = recipe.name.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true
 			end
 			return {
-				name = recipe.name,
-				localised_name = recipe.localised_name,
-				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
-				products = expandProducts(recipe.products, sec, playerName, effects, recipe.name),
+				name = recipe.name.name,
+				localised_name = recipe.name.localised_name,
+				ingredients = expandIngredients(recipe.name.ingredients, sec, playerName, recipe.name),
+				products = expandProducts(recipe.name.products, sec, playerName, effects, recipe.name),
 				seconds = sec,
 				effects = effects,
 				is_capped = is_capped
