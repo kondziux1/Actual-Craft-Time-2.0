@@ -163,7 +163,7 @@ local function pbarTraits(IPS, playerName)
 		--game.print("ips is inf")
 		belt = "express-transport-belt"
 		color = { r = 1, g = 1, b = 1 }                                                                                                                      --white
-		value = IPS / bltsInts[playerName].source["express-transport-elt"]
+		value = IPS / bltsInts[playerName].source["express-transport-belt"]
 		tool = { '',
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"], 2)),
@@ -520,7 +520,8 @@ local function guiVisibleAttrAscend(currentGuiSection, bool)
 end
 
 local function guiVisibleAttrDescend(currentGuiSection, bool)
-	if currentGuiSection == nil or not next(currentGuiSection) then return end --invalid or an enpty table
+	--or not next(currentGuiSection)  deleted that because it works without it and dont know any fix
+	if currentGuiSection == nil then return end --invalid or an enpty table
 	local player = game.players[currentGuiSection.player_index]
 	if not player then return end
 	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.ACT2[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
