@@ -898,7 +898,7 @@ local function playerClickedGui(event)
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player then return end
-	findPrototypeData(player)
+	findPrototypeData(player.name) -- this can be the fix idk
 	local elementName = event.element.name
 	if elementName == "recipeSprite" then
 		resetACT(event)
