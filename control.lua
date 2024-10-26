@@ -202,6 +202,7 @@ end
 local function expandIngredients(ingredients, sec, playerName, recipeName, recipe_bonus)
 	if not playerName then return {} end --hopefully this never happens
 	local ingredientTable = {}
+	if not recipe_bonus then recipe_bonus = 0 end
 	for k, ingredient in pairs(ingredients) do
 		local IPS = (ingredient.amount / math.max(sec, 1 / 60)) / (recipe_bonus + 1)  -- ingredient amount is also capped by tick
 		ingredientTable[k] = ingredient
@@ -317,6 +318,7 @@ local function getRecipeFromFurnaceOutput(entity, playerName)
 		for item, _ in pairs(entity.get_output_inventory().get_contents()) do --can get several *oil*?
 			local recipe = prototypes.recipe[item]
 			if recipe then
+				local recipe_bonus = recipe.productivity_bonus
 				globalSliderStorage(playerName, recipe.name)
 				local effects = getEffects(entity)
 				local sec = recipe.name.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
@@ -344,6 +346,7 @@ local function getRecipeFromFurnace(entity, playerName)
 		if not entity.get_recipe() then return nil end
 		local recipe = entity.get_recipe()
 		if recipe then
+			local recipe_bonus = recipe.productivity_bonus
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
 			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
@@ -354,7 +357,7 @@ local function getRecipeFromFurnace(entity, playerName)
 			return {
 				name = recipe.name,
 				localised_name = recipe.localised_name,
-				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
+				ingredients = expandIngredients(recipe.ingredients, sec, playerName, recipe.name,recipe_bonus),
 				products = expandProducts(recipe.products, sec, playerName, effects, recipe.name),
 				seconds = sec,
 				effects = effects,
