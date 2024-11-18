@@ -96,6 +96,15 @@ local function pbarTraits(IPS, playerName)
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"] * 100, 2)),
 				prototypes.item[belt].localised_name }
+	elseif bltsInts[playerName].source["turbo-transport-belt"] and --Bobs - 60
+	IPS <= bltsInts[playerName].source["turbo-transport-belt"] then
+	belt = "turbo-transport-belt"
+	color = { r = 0.35, g = 0.76, b = 0.16 } -- 90, 196, 42  green
+	value = IPS / bltsInts[playerName].source["turbo-transport-belt"]
+	tool = { "tooltips.percent-of",
+	tostring(
+		truncateNumber(IPS / bltsInts[playerName].source["turbo-transport-belt"] * 100, 2)),
+			prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["5d-mk4-transport-belt"] and --5dim - 57.6
 		IPS <= bltsInts[playerName].source["5d-mk4-transport-belt"] then
 		belt = "5d-mk4-transport-belt"
@@ -104,15 +113,6 @@ local function pbarTraits(IPS, playerName)
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["5d-mk4-transport-belt"] * 100, 2)),
-				prototypes.item[belt].localised_name }
-	elseif bltsInts[playerName].source["turbo-transport-belt"] and --Bobs - 60
-		IPS <= bltsInts[playerName].source["turbo-transport-belt"] then
-		belt = "turbo-transport-belt"
-		color = { r = 0.97, g = 0.07, b = 1.0 } -- 247, 18, 255  purple
-		value = IPS / bltsInts[playerName].source["turbo-transport-belt"]
-		tool = { "tooltips.percent-of",
-		tostring(
-			truncateNumber(IPS / bltsInts[playerName].source["turbo-transport-belt"] * 100, 2)),
 				prototypes.item[belt].localised_name }
 	elseif bltsInts[playerName].source["kr-advanced-transport-belt"] and --Kr - 60
 		IPS <= bltsInts[playerName].source["kr-advanced-transport-belt"] then
@@ -145,7 +145,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["kr-superior-transport-belt"] then
 		belt = "kr-superior-transport-belt"
 		color = { r = 0.82, g = 0.00, b = 0.97 } -- 210, 1, 247 purple--*********************
-		value = IPS / bltsInt[playerName].source["kr-superior-transport-belt"]
+		value = IPS / bltsInts[playerName].source["kr-superior-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["kr-superior-transport-belt"] * 100, 2)),
@@ -154,7 +154,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] then
 		belt = "BetterBelts_ultra-transport-belt"
 		color = { r = .22, g = .84, b = .11 } --56, 213, 27 green
-		value = IPS / bltInts[playerName].source["BetterBelts_ultra-transport-belt"]
+		value = IPS / bltsInts[playerName].source["BetterBelts_ultra-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["BetterBelts_ultra-transport-belt"] * 100, 2)),
@@ -216,6 +216,7 @@ end
 local function expandProducts(products, sec, playerName, effects, recipeName)
 	if not playerName then return {} end --hopefully this never happens
 	local productTable = {}
+	
 	local playerForce = game.players[playerName].force
 	for k, product in pairs(products) do
 		local amount = product.amount or amountMaxMinAverage(product) or 1
@@ -233,14 +234,18 @@ local function expandProducts(products, sec, playerName, effects, recipeName)
 		local IPS_main = expectedAmount / math.max(sec, 1 / 60) -- recipes can be executed only once per tick
 		local IPS_productivity = expectedAmount * effects.productivity.bonus / sec   -- productivity bonus does not have cap
 		local IPS = IPS_main + IPS_productivity
-		productTable[#products + 1] = {
-			amount = 10,
-			name = "space-science-pack",
-			type = "item",
-			localised_name = getLocalisedName("space-science-pack"),
-			ips = IPS,
-			pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
-		}
+		if (script.active_mods["space-age"]) then
+			productTable = nil; -- no product in space age
+		else
+			productTable[#products + 1] = {
+				amount = 10,
+				name = "space-science-pack",
+				type = "item",
+				localised_name = getLocalisedName("space-science-pack"),
+				ips = IPS,
+				pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
+			}
+		end
 	end
 	return productTable
 end
