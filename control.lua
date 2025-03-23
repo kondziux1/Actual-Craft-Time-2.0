@@ -45,17 +45,29 @@ local function getLocalisedName(name)
 end
 
 local function globalSliderStorage(playerName, recipeName)
-	if not storage.ACT_slider then
-		storage.ACT_slider = {}
+	if not storage.ACT2_slider then
+		storage.ACT2_slider = {}
 	end
-	if not storage.ACT_slider[playerName] then
-		storage.ACT_slider[playerName] = {}
+	if not storage.ACT2_slider[playerName] then
+		storage.ACT2_slider[playerName] = {}
 	end
-	if not storage.ACT_slider[playerName][recipeName] then
-		storage.ACT_slider[playerName][recipeName] = { value = 1 }
+	if not storage.ACT2_slider[playerName][recipeName] then
+		storage.ACT2_slider[playerName][recipeName] = { value = 1 }
 	end
 end
-
+local function findPrototypeData(playerName)
+	if not bltsInts then
+		bltsInts = {}
+	end
+	if not bltsInts[playerName] then
+		bltsInts[playerName] = { source = {} }
+	end
+	for k, v in pairs(prototypes.entity) do
+		if k:find("transport%-belt") and not k:find("ground") and v.belt_speed then
+			bltsInts[playerName].source[k] = ((60 * v.belt_speed) / (1 / 8)) -- I don't remember why it needs 8/64(1/8) but it does: 8 items per tile?
+		end
+	end
+end
 local function pbarTraits(IPS, playerName)
 	IPS = tonumber(IPS)
 	local belt = ""
@@ -63,6 +75,11 @@ local function pbarTraits(IPS, playerName)
 	local value = 0
 	local tool = {}
 	-- may contain mod belts, bob's/better etc.
+	if not bltsInts then
+		findPrototypeData(playerName)
+	end
+	
+	
 	if bltsInts[playerName].source["basic-transport-belt"] and  --Bobs - 7.5
 		IPS <= bltsInts[playerName].source["basic-transport-belt"] then
 		belt = "basic-transport-belt"
@@ -136,7 +153,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["ultimate-transport-belt"] then
 		belt = "ultimate-transport-belt"
 		color = { r = 0.07, g = 1.0, b = 0.62 } -- 18, 255, 158 green
-		value = IPS / bltsInts[playerName].source["ultimate-tansport-belt"]
+		value = IPS / bltsInts[playerName].source["ultimate-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["ultimate-transport-belt"] * 100, 2)),
@@ -208,7 +225,7 @@ local function expandIngredients(ingredients, sec, playerName, recipeName, recip
 		ingredientTable[k] = ingredient
 		ingredientTable[k].localised_name = getLocalisedName(ingredient.name)
 		ingredientTable[k].ips = IPS
-		ingredientTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
+		ingredientTable[k].pbar = pbarTraits(IPS * storage.ACT2_slider[playerName][recipeName].value, playerName)
 	end
 	return ingredientTable
 end
@@ -227,7 +244,7 @@ local function expandProducts(products, sec, playerName, effects, recipeName)
 		productTable[k] = product
 		productTable[k].localised_name = getLocalisedName(product.name)
 		productTable[k].ips = IPS
-		productTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
+		productTable[k].pbar = pbarTraits(IPS * storage.ACT2_slider[playerName][recipeName].value, playerName)
 	end
 	if recipeName == "rocket-part" then
 		local expectedAmount = 10  --if a mod changes how many space-science-pack's in the rocket-part recipe then this will be wrong - need to figure out how/where to pull it from game data
@@ -243,7 +260,7 @@ local function expandProducts(products, sec, playerName, effects, recipeName)
 				type = "item",
 				localised_name = getLocalisedName("space-science-pack"),
 				ips = IPS,
-				pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
+				pbar = pbarTraits(IPS * storage.ACT2_slider[playerName][recipeName].value, playerName)
 			}
 		end
 	end
@@ -267,7 +284,7 @@ local function expandProductsMines(products, sec, playerName, effects, recipeNam
 		productTable[k] = product
 		productTable[k].localised_name = getLocalisedName(product.name)
 		productTable[k].ips = IPS
-		productTable[k].pbar = pbarTraits(IPS * storage.ACT_slider[playerName][recipeName].value, playerName)
+		productTable[k].pbar = pbarTraits(IPS * storage.ACT2_slider[playerName][recipeName].value, playerName)
 	end
 	return productTable
 end
@@ -465,19 +482,7 @@ local function spriteCheck(player, spritePath)
 	return "utility/questionmark"
 end
 
-local function findPrototypeData(playerName)
-	if not bltsInts then
-		bltsInts = {}
-	end
-	if not bltsInts[playerName] then
-		bltsInts[playerName] = { source = {} }
-	end
-	for k, v in pairs(prototypes.entity) do
-		if k:find("transport%-belt") and not k:find("ground") and v.belt_speed then
-			bltsInts[playerName].source[k] = ((60 * v.belt_speed) / (1 / 8)) -- I don't remember why it needs 8/64(1/8) but it does: 8 items per tile?
-		end
-	end
-end
+
 
 local function addNextInfoWrap(parent_section, i)
 	local player = game.players[parent_section.player_index]
@@ -485,7 +490,7 @@ local function addNextInfoWrap(parent_section, i)
 	parent_section.add { type = "flow" --[[X--]], name = "infoWrap" .. i, direction = "vertical", visible = false --[[*--]] }
 	local parent_section_infoWrap = parent_section["infoWrap" .. i]
 	parent_section_infoWrap.add { type = "flow" --[[X--]], name = "itemIPSWrap", visible = false --[[*--]] }
-	parent_section_infoWrap.itemIPSWrap.add { type = "sprite-button", name = "item_sprite", tooltip = "", visible = false --[[*--]], style = ACT_buttons }
+	parent_section_infoWrap.itemIPSWrap.add { type = "sprite-button", name = "item_sprite", tooltip = "", visible = false --[[*--]], style = ACT2_buttons }
 	parent_section_infoWrap.itemIPSWrap.add { type = "label", name = "IPSLabel", tooltip = "", caption = "", visible = false --[[*--]] }
 	parent_section_infoWrap.add { type = "progressbar", name = "item_Bar", tooltip = "", visible = false --[[*--]] }
 end
@@ -520,7 +525,7 @@ local function guiVisibleAttrDescend(currentGuiSection, bool)
 	if currentGuiSection == nil then return end --invalid or an enpty table
 	local player = game.players[currentGuiSection.player_index]
 	if not player then return end
-	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.ACT2[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT_frame_" .. currentGuiSection.player_index then
+	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.ACT2[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT2_frame_" .. currentGuiSection.player_index then
 		guiVisibleAttrAscend(currentGuiSection.parent, bool)
 	end
 	currentGuiSection.visible = bool
@@ -537,23 +542,23 @@ local function setsettings(player)
 	end
 	if not storage.ACT2[player.name] then
 		storage.ACT2[player.name] = {
-			["gui-location"] = player.mod_settings["ACT-Gui-Location"].value,
-			["simple-text"] = player.mod_settings["ACT-simple-text"].value,
-			["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value,
-			["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value,
+			["gui-location"] = player.mod_settings["ACT2-Gui-Location"].value,
+			["simple-text"] = player.mod_settings["ACT2-simple-text"].value,
+			["max-slider-value"] = player.mod_settings["ACT2-max-slider-value"].value,
+			["sensitivity-value"] = player.mod_settings["ACT2-slider-sensitivity"].value,
 		}
 	else --check for changes
-		if storage.ACT2[player.name]["gui-location"] ~= player.mod_settings["ACT-Gui-Location"].value then
-			storage.ACT2[player.name]["gui-location"] = player.mod_settings["ACT-Gui-Location"].value
+		if storage.ACT2[player.name]["gui-location"] ~= player.mod_settings["ACT2-Gui-Location"].value then
+			storage.ACT2[player.name]["gui-location"] = player.mod_settings["ACT2-Gui-Location"].value
 		end
-		if storage.ACT2[player.name]["simple-text"] ~= player.mod_settings["ACT-simple-text"].value then
-			storage.ACT2[player.name]["simple-text"] = player.mod_settings["ACT-simple-text"].value
+		if storage.ACT2[player.name]["simple-text"] ~= player.mod_settings["ACT2-simple-text"].value then
+			storage.ACT2[player.name]["simple-text"] = player.mod_settings["ACT2-simple-text"].value
 		end
-		if storage.ACT2[player.name]["max-slider-value"] ~= player.mod_settings["ACT-max-slider-value"].value then
-			storage.ACT2[player.name]["max-slider-value"] = player.mod_settings["ACT-max-slider-value"].value
+		if storage.ACT2[player.name]["max-slider-value"] ~= player.mod_settings["ACT2-max-slider-value"].value then
+			storage.ACT2[player.name]["max-slider-value"] = player.mod_settings["ACT2-max-slider-value"].value
 		end
-		if storage.ACT2[player.name]["sensitivity-value"] ~= player.mod_settings["ACT-slider-sensitivity"].value then
-			storage.ACT2[player.name]["sensitivity-value"] = player.mod_settings["ACT-slider-sensitivity"].value
+		if storage.ACT2[player.name]["sensitivity-value"] ~= player.mod_settings["ACT2-slider-sensitivity"].value then
+			storage.ACT2[player.name]["sensitivity-value"] = player.mod_settings["ACT2-slider-sensitivity"].value
 		end
 	end
 end
@@ -565,7 +570,7 @@ local function closeGui(event)
 	setsettings(player)
 	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation]
-	guiVisibleAttrDescend(playersGui["ACT_frame_" .. playersGui.player_index], false)
+	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
 end
 
 local function updateRadio(currentGuiSection)
@@ -597,7 +602,7 @@ local function updateItem(recipe, items, current_section, minOrSec)
 
 		guiElementInfoWrap_K.itemIPSWrap.item_sprite.tooltip = v.localised_name or v.name
 		guiElementInfoWrap_K.itemIPSWrap.IPSLabel.caption = { '', truncateNumber(
-		v.ips * storage.ACT_slider[player.name][recipe.name].value * minOrSec.value, 2), minOrSec.time }
+		v.ips * storage.ACT2_slider[player.name][recipe.name].value * minOrSec.value, 2), minOrSec.time }
 		if v.probability and v.probability < 1 then
 			guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = v.probability * 100 .. "%"
 		else
@@ -663,8 +668,8 @@ local function toggleRadio(element)
 	end
 end
 
-local function determineMinOrSec(ACT_time_second)
-	if ACT_time_second.state then
+local function determineMinOrSec(ACT2_time_second)
+	if ACT2_time_second.state then
 		return { value = 1, time = { 'captions.perSec' }, captions = 'captions.seconds' }
 	else
 		return { value = 60, time = { 'captions.perMin' }, captions = 'captions.minutes' }
@@ -673,11 +678,11 @@ end
 
 local function setupGui(player, playersGui)
 	-- outside container
-	playersGui.add { type = "frame", name = "ACT_frame_" .. playersGui.player_index, direction = "vertical", visible = true --[[**--]] }
-
+	playersGui.add {gui = defines.relative_gui_type.controller_gui, position = defines.relative_gui_position.top, type = "frame", name = "ACT2_frame_" .. playersGui.player_index, direction = "vertical", visible = true }
+	
 	--add assemblerGroup
-	playersGui["ACT_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "assemblerGroup", direction = "horizontal", visible = false --[[*--]] }
-	local assembler_group = playersGui["ACT_frame_" .. playersGui.player_index].assemblerGroup
+	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "assemblerGroup", direction = "horizontal", visible = false --[[*--]] }
+	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].assemblerGroup
 
 	--"main" recipe section
 	assembler_group.add { type = "flow" --[[X--]], name = "recipeRadioWrap", direction = "vertical", visible = false --[[*--]] }
@@ -696,13 +701,13 @@ local function setupGui(player, playersGui)
 	local radio_section = assembler_group.recipeRadioWrap.radioSection
 	radio_section.add { type = "flow", name = "radioLables", direction = "vertical", visible = false }
 	radio_section.add { type = "flow", name = "radioButtons", direction = "vertical", visible = false, style =
-	"ACT_vertical_flow" }
+	"ACT2_vertical_flow" }
 
-	radio_section.radioLables.add { type = "label", name = "labelTimeSecond", caption = "Seconds", tooltip = { 'controls.ACT_IPS_IPM_T', 'seconds' }, visible = false }
-	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeSecond", tooltip = { 'controls.ACT_IPS_IPM_T', 'seconds' }, state = true, visible = false }
+	radio_section.radioLables.add { type = "label", name = "labelTimeSecond", caption = "Seconds", tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' }, visible = false }
+	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeSecond", tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' }, state = true, visible = false }
 
-	radio_section.radioLables.add { type = "label", name = "labelTimeMinute", caption = "Minutes", tooltip = { 'controls.ACT_IPS_IPM_T', 'minutes' }, visible = false }
-	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeMinute", tooltip = { 'controls.ACT_IPS_IPM_T', 'minutes' }, state = false, visible = false }
+	radio_section.radioLables.add { type = "label", name = "labelTimeMinute", caption = "Minutes", tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' }, visible = false }
+	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeMinute", tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' }, state = false, visible = false }
 
 	--add ingredients
 	assembler_group.add { type = "flow" --[[X--]], name = "ingredientsSection", direction = "vertical", visible = false --[[*--]] }
@@ -717,24 +722,24 @@ local function setupGui(player, playersGui)
 	products_section.add { type = "label", name = "sectionLabel", caption = "Products", visible = false --[[*--]] }
 
 	--add warningGroup
-	playersGui["ACT_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "warningGroup", direction = "vertical", visible = false --[[*--]] }
-	local warning_group = playersGui["ACT_frame_" .. playersGui.player_index].warningGroup
+	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "warningGroup", direction = "vertical", visible = false --[[*--]] }
+	local warning_group = playersGui["ACT2_frame_" .. playersGui.player_index].warningGroup
 	warning_group.add { type = "label", name = "warningLabel", caption = "", visible = false --[[*--]] }
 
 	--add machineGroup
-	playersGui["ACT_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "machineGroup", direction = "vertical", visible = false --[[*--]] }
-	local machine_group = playersGui["ACT_frame_" .. playersGui.player_index].machineGroup
+	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "machineGroup", direction = "vertical", visible = false --[[*--]] }
+	local machine_group = playersGui["ACT2_frame_" .. playersGui.player_index].machineGroup
 
 	machine_group.add { type = "label", name = "machineLabel", caption = "Adjust number of machines", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
 	machine_group.add { type = "flow" --[[X--]], name = "sliderSection", direction = "horizontal", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
 
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" }, sprite = spriteCheck(player, "editor_speed_down"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Sub5-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" }, sprite = spriteCheck(player, "editor_speed_down"), style = "ACT2_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT2_buttons", visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = storage.ACT2[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
 	--*** --[[ value = 0,--]]--[[truncateNumber(0--[[sliderValue--]], 0)--]]
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.ACT2[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT2_buttons", visible = false --[[*--]] }
+	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.ACT2[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT2_buttons", visible = false --[[*--]] }
 
 	machine_group.sliderSection.add { type = "label", name = "sliderLabel", caption = "", visible = false --[[*--]] }
 end
@@ -754,14 +759,14 @@ local function run(event)
 	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 
-	if not playersGui["ACT_frame_" .. playerIndex] then
+	if not playersGui["ACT2_frame_" .. playerIndex] then
 		setupGui(player, playersGui)
 	end
 
-	guiVisibleAttrDescend(playersGui["ACT_frame_" .. playersGui.player_index], false)
+	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
 	findPrototypeData(player.name)
 	local recipe = getRecipe(entity, player.name)
-	local assembler_group = playersGui["ACT_frame_" .. playersGui.player_index].assemblerGroup
+	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].assemblerGroup
 	if not recipe then --update gui and return
 		updateRecipe(assembler_group.recipeRadioWrap.recipeSection, { 'tooltips.reset', entity.localised_name },
 			{ 'captions.no-recipe' }, spriteCheck(player, entity.name))
@@ -784,7 +789,7 @@ local function run(event)
 	updateItem(recipe, recipe.products, assembler_group.productsSection, minOrSec)
 
 	if recipe.is_capped then
-		local warning_group = playersGui["ACT_frame_" .. playersGui.player_index].warningGroup
+		local warning_group = playersGui["ACT2_frame_" .. playersGui.player_index].warningGroup
 		if warning_group == nil then
 			--game.print("warning_group is nil") --This should never happen as per on_configuration_changed
 		else
@@ -792,8 +797,8 @@ local function run(event)
 		end
 	end
 
-	local machine_group = playersGui["ACT_frame_" .. playersGui.player_index].machineGroup
-	updateMachine(machine_group, truncateNumber(storage.ACT_slider[player.name][recipe.name].value, 0), entity)
+	local machine_group = playersGui["ACT2_frame_" .. playersGui.player_index].machineGroup
+	updateMachine(machine_group, truncateNumber(storage.ACT2_slider[player.name][recipe.name].value, 0), entity)
 end
 
 local function resetACT(event)
@@ -820,55 +825,55 @@ local function changeGuiSliderButtons(event)
 	if not recipe then return end
 	if shi and not alt and not con then --click with keyboard
 		if elementName:find("Sub5") then -- -25
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -25
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -25
 		elseif elementName:find("Sub1") then -- -10
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -10
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -10
 		elseif elementName:find("Add1") then -- +10
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 10
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 10
 		elseif elementName:find("Add5") then -- +25
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 25
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 25
 		end
 	elseif shi and con and not alt then --click with keyboard
 		if elementName:find("Sub5") then -- -31
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -31
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -31
 		elseif elementName:find("Sub1") then -- -7
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -7
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -7
 		elseif elementName:find("Add1") then -- +7
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 7
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 7
 		elseif elementName:find("Add5") then -- +31
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 31
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 31
 		end
 	elseif con and not shi and not alt then --click with keyboard
 		local settingMaxSliderValue = storage.ACT2[player.name]["max-slider-value"]
 		if elementName:find("Sub5") then -- down to 1
-			storage.ACT_slider[player.name][recipe.name].value = 1
+			storage.ACT2_slider[player.name][recipe.name].value = 1
 		elseif elementName:find("Sub1") then -- down to 50%
-			if storage.ACT_slider[player.name][recipe.name].value >= settingMaxSliderValue / 2 then
-				storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
+			if storage.ACT2_slider[player.name][recipe.name].value >= settingMaxSliderValue / 2 then
+				storage.ACT2_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
 			end
 		elseif elementName:find("Add1") then -- up   to 50%
-			if storage.ACT_slider[player.name][recipe.name].value <= settingMaxSliderValue / 2 then
-				storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
+			if storage.ACT2_slider[player.name][recipe.name].value <= settingMaxSliderValue / 2 then
+				storage.ACT2_slider[player.name][recipe.name].value = settingMaxSliderValue / 2
 			end
 		elseif elementName:find("Add5") then -- up   to max
-			storage.ACT_slider[player.name][recipe.name].value = settingMaxSliderValue
+			storage.ACT2_slider[player.name][recipe.name].value = settingMaxSliderValue
 		end
 	elseif not shi and not alt and not con then --normal click
 		if elementName:find("Sub5") then     -- -5
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -5
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -5
 		elseif elementName:find("Sub1") then -- -1
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + -1
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + -1
 		elseif elementName:find("Add1") then -- +1
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 1
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 1
 		elseif elementName:find("Add5") then -- +5
-			storage.ACT_slider[player.name][recipe.name].value = storage.ACT_slider[player.name][recipe.name].value + 5
+			storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2_slider[player.name][recipe.name].value + 5
 		end
 	end
 
-	if storage.ACT_slider[player.name][recipe.name].value < 1 then
-		storage.ACT_slider[player.name][recipe.name].value = 1
-	elseif storage.ACT_slider[player.name][recipe.name].value > storage.ACT2[player.name]["max-slider-value"] then
-		storage.ACT_slider[player.name][recipe.name].value = storage.ACT2[player.name]["max-slider-value"]
+	if storage.ACT2_slider[player.name][recipe.name].value < 1 then
+		storage.ACT2_slider[player.name][recipe.name].value = 1
+	elseif storage.ACT2_slider[player.name][recipe.name].value > storage.ACT2[player.name]["max-slider-value"] then
+		storage.ACT2_slider[player.name][recipe.name].value = storage.ACT2[player.name]["max-slider-value"]
 	end
 	event.gui_type = defines.gui_type.entity
 	event.entity = entity
@@ -885,9 +890,9 @@ local function playerSlid(event)
 
 	local recipe = getRecipe(entity, player.name)
 	if not recipe then return end
-	if storage.ACT_slider[player.name][recipe.name] then
-		if not (math.abs(storage.ACT_slider[player.name][recipe.name].value - event.element.slider_value) >= storage.ACT2[player.name]["sensitivity-value"] / 10) then return end
-		storage.ACT_slider[player.name][recipe.name].value = event.element.slider_value
+	if storage.ACT2_slider[player.name][recipe.name] then
+		if not (math.abs(storage.ACT2_slider[player.name][recipe.name].value - event.element.slider_value) >= storage.ACT2[player.name]["sensitivity-value"] / 10) then return end
+		storage.ACT2_slider[player.name][recipe.name].value = event.element.slider_value
 
 		event.entity = player.opened
 		event.gui_type = defines.gui_type.entity
@@ -909,14 +914,14 @@ local function playerClickedGui(event)
 		resetACT(event)
 		return
 	end
-	if elementName:find("ACT%-sliderButton") then
+	if elementName:find("ACT2%-sliderButton") then
 		changeGuiSliderButtons(event)
 		return
 	end
 end
 
 local function radiobutton(event)
-	if event.input_name == "ACT_IPS_IPM" then
+	if event.input_name == "ACT2_IPS_IPM" then
 		for k, v in pairs(event.element.children_names) do
 			if event.element[v].state == true then
 				event.element[v].state = not event.element[v].state
@@ -945,11 +950,11 @@ local function customInputForRadioButton(event)
 	setsettings(player)
 	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
-	if not playersGui["ACT_frame_" .. playerIndex] then
+	if not playersGui["ACT2_frame_" .. playerIndex] then
 		setupGui(player, playersGui)
 	end
 
-	event.element = playersGui["ACT_frame_" .. event.player_index].assemblerGroup.recipeRadioWrap.radioSection
+	event.element = playersGui["ACT2_frame_" .. event.player_index].assemblerGroup.recipeRadioWrap.radioSection
 	.radioButtons
 	radiobutton(event)
 end
@@ -968,8 +973,8 @@ local function modChange(event)
 		-- mod was updated, check for gui and delete
 		for playerIndex, player in pairs(game.players) do
 			for _, guiLocation in pairs(player.gui.children) do --top, left and everywhere (everywhere isn't necessary but ¯\_(ツ)_/¯, I don't care)
-				if guiLocation["ACT_frame_" .. playerIndex] then
-					guiLocation["ACT_frame_" .. playerIndex].destroy()
+				if guiLocation["ACT2_frame_" .. playerIndex] then
+					guiLocation["ACT2_frame_" .. playerIndex].destroy()
 				end
 			end
 		end
@@ -986,6 +991,6 @@ script.on_event(defines.events.on_gui_value_changed, playerSlid)
 
 script.on_event(defines.events.on_gui_checked_state_changed, radiobutton)
 
-script.on_event("ACT_IPS_IPM", customInputForRadioButton)
+script.on_event("ACT2_IPS_IPM", customInputForRadioButton)
 
 script.on_configuration_changed(modChange)

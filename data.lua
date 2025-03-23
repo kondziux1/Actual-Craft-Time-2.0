@@ -4,7 +4,7 @@ data:extend(
 	{
 		{
 			type = "custom-input",
-			name = "ACT_IPS_IPM",
+			name = "ACT2_IPS_IPM",
 			key_sequence = "CONTROL + ALT + T",
 			consuming = "none"
 			-- 'consuming' available options:

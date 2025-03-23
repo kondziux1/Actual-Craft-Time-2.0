@@ -1,8 +1,8 @@
 local default_style = data.raw["gui-style"].default
 
-default_style.ACT_buttons = {
+default_style.ACT2_buttons = {
   type = "button_style",
-  --parent = "slot_button",
+  parent = "slot_button",
 
   scalable = false,
 
@@ -15,9 +15,8 @@ default_style.ACT_buttons = {
   width = 20,
 }
 
-default_style.ACT_vertical_flow = {
+default_style.ACT2_vertical_flow = {
   type = "vertical_flow_style",
   vertical_spacing = 10,
   top_padding = 6,
 }
--- }

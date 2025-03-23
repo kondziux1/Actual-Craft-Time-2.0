@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.6.7
+Date: 03/23/2025
+  Changes:
+    - Updated the code to have ACT2 instead of ACT
+  Bugfixes:
+    - Tansport-Belt is now a Transport-Belt making a Ogadei6's bug report fixed :3
+    - Fixed crash after loading a save while gui is open and clicking on the gui
+---------------------------------------------------------------------------------------------------
 Version: 0.6.6
 Date: 11/18/2024
   Bugfixes:
