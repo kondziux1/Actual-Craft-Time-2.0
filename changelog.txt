@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.6.7
-Date: 03/23/2025
+Date: 2025-03-23
   Changes:
     - Updated the code to have ACT2 instead of ACT
   Bugfixes:
