@@ -185,7 +185,7 @@ local function pbarTraits(IPS, playerName)
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["express-transport-belt"], 2)),
 				" ",
-				prototypes.item[belt].localised_name, "s" }                                                                                                     --plural will be a problem
+				prototypes.item[belt].localised_name }                                                                                                     --plural will be a problem
 	end
 	return { belt = belt, color = color, value = value, tool = tool }
 end
@@ -759,14 +759,21 @@ local function run(event)
 	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation] --top or left	
 
-	if not playersGui["ACT2_frame_" .. playerIndex] then
+	local frameName = "ACT2_frame_" .. playerIndex  -- The frame’s name
+	
+	-- Debug ui reset 
+	-- if playersGui[frameName] then
+	-- 	playersGui[frameName].destroy()  -- Properly remove the frame
+	-- end
+
+	if not playersGui[frameName] then
 		setupGui(player, playersGui)
 	end
 
-	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
+	guiVisibleAttrDescend(playersGui[frameName], false)
 	findPrototypeData(player.name)
 	local recipe = getRecipe(entity, player.name)
-	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].assemblerGroup
+	local assembler_group = playersGui[frameName].assemblerGroup
 	if not recipe then --update gui and return
 		updateRecipe(assembler_group.recipeRadioWrap.recipeSection, { 'tooltips.reset', entity.localised_name },
 			{ 'captions.no-recipe' }, spriteCheck(player, entity.name))
