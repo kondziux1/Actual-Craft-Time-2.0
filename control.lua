@@ -135,7 +135,7 @@ local function pbarTraits(IPS, playerName)
 		IPS <= bltsInts[playerName].source["kr-advanced-transport-belt"] then
 		belt = "kr-advanced-transport-belt"
 		color = { r = 0.13, g = 0.92, b = 0.09 } -- 34, 235, 23  green
-		value = IPS / bltsInts[playerName].source["kr-dvanced-transport-belt"]
+		value = IPS / bltsInts[playerName].source["kr-advanced-transport-belt"]
 		tool = { "tooltips.percent-of",
 		tostring(
 			truncateNumber(IPS / bltsInts[playerName].source["kr-advanced-transport-belt"] * 100, 2)),
@@ -371,7 +371,11 @@ local function getRecipeFromFurnace(entity, playerName)
 			local recipe_bonus = recipe.productivity_bonus
 			globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
-			local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1)
+			--local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1) //stary typ 
+			local sec = recipe.energy / entity.crafting_speed --z factorio mods od usera Inflatable
+				if not entity.name:find("recycler") then
+    				sec = sec / (effects.speed.bonus + 1)
+				end
 			local is_capped = false
 			if sec < (1 / 60) then
 				is_capped = true

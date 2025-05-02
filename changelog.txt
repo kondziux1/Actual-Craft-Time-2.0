@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.6.8
-Date: ????
-  Changes:
+Version: 0.7.0
+Date: 2025-05-02
+  Bugfixes:
+    - fixed typo: "kr-dvanced-transport-belt". Thanks to QuackyQuack.
+    - fixed function in getRecipeFromFurnace. Huge thanks to Inflatable for fixed function.
 ---------------------------------------------------------------------------------------------------
 Version: 0.6.7
 Date: 2025-03-23
