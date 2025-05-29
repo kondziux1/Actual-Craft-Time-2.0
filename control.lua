@@ -268,9 +268,10 @@ local function expandProducts(products, sec, playerName, effects, recipeName)
 end
 
 local function expandProductsMines(products, sec, playerName, effects, recipeName, entity)
-	if not playerName then
+	if not playerName or products then -- fallback
 		return {} --hopefully this never happens
 	end
+
 	local productTable = {}
 	local playerForce = game.players[playerName].force
 	for k, product in pairs(products) do
