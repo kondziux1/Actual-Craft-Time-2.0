@@ -1,19 +1,11 @@
+
 local function truncateNumber(nu, digit)
-	--game.print("number "..nu.." digit "..digit)
-	local k = 1
-	while nu > k do
-		k = k * 10
-		digit = digit + 1
-	end
-	--game.print("k "..k..", digit "..digit)
-	nu = string.format("%." .. digit .. "f", nu / k) * k
-	return nu
+    local mult = 10^digit
+    return (nu * mult - (nu * mult % 1)) / mult
 end
 
 local function conditionalDecimalIncrease(input, x)
-	if input < .25 and not (input < .025) then return x + 1 end
-	if input < .025 then return x + 2 end
-	return x
+    return x + (input < 0.25 and 1 or 0) + (input < 0.025 and 1 or 0)
 end
 
 local function amountFromPumpjack(entity)
@@ -24,8 +16,9 @@ local function amountFromPumpjack(entity)
 end
 
 local function amountMaxMinAverage(product)
-	if not product.amount_max or not product.amount_min then return nil end
-	return (product.amount_max + product.amount_min) / 2
+    local max = product.amount_max
+    local min = product.amount_min
+    return (max and min) and (max + min) * 0.5 or nil
 end
 
 local function getLocalisedName(name)
@@ -42,6 +35,14 @@ local function getLocalisedName(name)
 		return prototypes.item[name].localised_name
 	end
 	return name
+end
+
+local function determineMinOrSec(ACT2_time_second)
+	if ACT2_time_second.state then
+		return { value = 1, time = { 'captions.perSec' }, captions = 'captions.seconds' }
+	else
+		return { value = 60, time = { 'captions.perMin' }, captions = 'captions.minutes' }
+	end
 end
 
 local function globalSliderStorage(playerName, recipeName)
@@ -68,6 +69,7 @@ local function findPrototypeData(playerName)
 		end
 	end
 end
+-- BELTS  yea this is for belts soo shitty code 
 local function pbarTraits(IPS, playerName)
 	IPS = tonumber(IPS)
 	local belt = ""
@@ -349,6 +351,7 @@ local function getRecipeFromFurnaceOutput(entity, playerName)
 				if sec < (1 / 60) then
 					is_capped = true
 				end
+				--this needs to be changed somehow because this is function type "do not touch"
 				return {
 					name = recipe.name.name,
 					localised_name = recipe.name.localised_name,
@@ -375,7 +378,7 @@ local function getRecipeFromFurnace(entity, playerName)
 			--local sec = recipe.energy / (entity.crafting_speed * (effects.speed.bonus + 1)) --x(y+1) //stary typ 
 			local sec = recipe.energy / entity.crafting_speed --z factorio mods od usera Inflatable
 				if not entity.name:find("recycler") then
-    				sec = sec / (effects.speed.bonus + 1)
+					sec = sec / (effects.speed.bonus + 1)
 				end
 			local is_capped = false
 			if sec < (1 / 60) then
@@ -495,7 +498,7 @@ local function addNextInfoWrap(parent_section, i)
 	parent_section.add { type = "flow" --[[X--]], name = "infoWrap" .. i, direction = "vertical", visible = false --[[*--]] }
 	local parent_section_infoWrap = parent_section["infoWrap" .. i]
 	parent_section_infoWrap.add { type = "flow" --[[X--]], name = "itemIPSWrap", visible = false --[[*--]] }
-	parent_section_infoWrap.itemIPSWrap.add { type = "sprite-button", name = "item_sprite", tooltip = "", visible = false --[[*--]], style = ACT2_buttons }
+	parent_section_infoWrap.itemIPSWrap.add { type = "sprite-button", name = "item_sprite", tooltip = "", visible = false --[[*--]], style = "ACT2_buttons" }
 	parent_section_infoWrap.itemIPSWrap.add { type = "label", name = "IPSLabel", tooltip = "", caption = "", visible = false --[[*--]] }
 	parent_section_infoWrap.add { type = "progressbar", name = "item_Bar", tooltip = "", visible = false --[[*--]] }
 end
@@ -512,7 +515,7 @@ local function guiDescendFind(currentGuiSection, tooltip, message, spritePath)
 		end
 	end
 end
-
+-- po CO TO KURWA TU JEST JAKBY JESZCZE NIE WIEM ALE PO CO  OOO
 local function guiVisibleAttrAscend(currentGuiSection, bool)
 	--top level gui element or other ("top" or "left" (or "center"))
 	if currentGuiSection == nil then return end
@@ -524,7 +527,7 @@ local function guiVisibleAttrAscend(currentGuiSection, bool)
 	if not currentGuiSection.parent then return end
 	guiVisibleAttrAscend(currentGuiSection.parent, bool)
 end
-
+-- TO TEŻ NA CHUJ MI TO CZEMU W DRUGA STRONE POCO MASZ JUŻ W JEDNĄ POCO W DRUGOM
 local function guiVisibleAttrDescend(currentGuiSection, bool)
 	--or not next(currentGuiSection)  deleted that because it works without it and dont know any fix
 	if currentGuiSection == nil then return end --invalid or an enpty table
@@ -568,15 +571,297 @@ local function setsettings(player)
 	end
 end
 
-local function closeGui(event)
-	local playerIndex = event.player_index
-	local player = game.players[playerIndex]
-	if not player then return end
-	setsettings(player)
-	local guiLocation = storage.ACT2[player.name]["gui-location"]
-	local playersGui = player.gui[guiLocation]
-	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
+
+
+
+
+local function desiredGuiTypeEntity(event)
+	if event.gui_type == defines.gui_type.entity then
+		return true
+	else
+		return false
+	end
 end
+
+local function desiredGuiNameSlider(event)
+	if event.element.name == event.player_index .. "_slider" then
+		return true
+	else
+		return false
+	end
+end
+
+local function desiredEntity(entity)
+	if entity and ( --add in reactor?
+			entity.type:find("assembling%-machine") or
+			entity.type:find("furnace") and not entity.name:find("reverse") or
+			entity.type:find("rocket%-silo") or
+			entity.type:find("lab") or
+			entity.type:find("mining%-drill")) then
+		return true
+	else
+		return false
+	end
+end
+
+
+
+
+
+local function setupGui(player, playersGui)
+	-- outside container
+	local main_frame = playersGui.add {
+		type = "frame",
+		name = "ACT2_frame_" .. playersGui.player_index,
+		direction = "vertical",
+		visible = true
+	}
+	-- title bar for grabbing and better look
+	local titlebar = playersGui.add {
+		type = "flow",
+		direction = "horizontal",
+		name="title_bar"
+		}
+
+	titlebar.add{
+		type = "label",
+		caption = "Actual Craft Time 2.0",
+		style = "frame_title",
+		ignored_by_interaction = true
+	}
+	main_frame.drag_target = titlebar
+
+	--add assemblerGroup
+	playersGui["ACT2_frame_" .. playersGui.player_index].add {
+		type = "flow" --[[X--]],
+		name = "assemblerGroup",
+		direction = "horizontal",
+		visible = false --[[*--]]
+	}
+
+	--"main" recipe section
+	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].add {
+		type = "flow" --[[X--]],
+		name = "recipeRadioWrap",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+
+	assembler_group.recipeRadioWrap.add {
+		type = "flow" --[[X--]],
+		name = "recipeSection",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+
+	local recipe_section = assembler_group.recipeRadioWrap.recipeSection
+
+
+	recipe_section.add {
+		type = "label",
+		name = "recipeLabel",
+		caption = "Recipe",
+		visible = false --[[*--]]
+	}
+	recipe_section.add {
+		type = "flow" --[[X--]],
+		name = "recipe",
+		direction = "horizontal",
+		visible = false --[[*--]]
+	}
+	recipe_section.recipe.add {
+		type = "sprite-button",
+		name = "recipeSprite",
+		tooltip = "",
+		sprite = "",
+		visible = false --[[*--]]
+	}
+	recipe_section.recipe.add {
+		type = "label",
+		name = "recipeCraftTime",
+		caption = 'craft time',
+		visible = false --[[*--]]
+	}
+
+	-- if no recipe, all below is(should) not visible ***
+
+	--add radio
+	assembler_group.recipeRadioWrap.add {
+		type = "flow",
+		name = "radioSection",
+		direction = "horizontal",
+		visible = false
+	}
+
+	local radio_section = assembler_group.recipeRadioWrap.radioSection
+
+	radio_section.add {
+		type = "flow",
+		name = "radioLables",
+		direction = "vertical",
+		visible = false
+	}
+
+	radio_section.add {
+		type = "flow",
+		name = "radioButtons",
+		direction = "vertical",
+		visible = false,
+		style = "ACT2_vertical_flow"
+	}
+
+	radio_section.radioLables.add {
+		type = "label",
+		name = "labelTimeSecond",
+		caption = "Seconds",
+		tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' },
+		visible = false
+	}
+	radio_section.radioButtons.add {
+		type = "radiobutton",
+		name = "ACTTimeSecond",
+		tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' },
+		state = true,
+		visible = false
+	}
+
+	radio_section.radioLables.add {
+		type = "label",
+		name = "labelTimeMinute",
+		caption = "Minutes",
+		tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' },
+		visible = false
+	}
+	radio_section.radioButtons.add {
+		type = "radiobutton",
+		name = "ACTTimeMinute",
+		tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' },
+		state = false,
+		visible = false
+	}
+
+	--add ingredients
+	assembler_group.add {
+		type = "flow" --[[X--]],
+		name = "ingredientsSection",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+
+	local ingredients_section = assembler_group.ingredientsSection
+
+	ingredients_section.add {
+		type = "label",
+		name = "sectionLabel",
+		caption = "Ingredients",
+		visible = false --[[*--]]
+	}
+
+	--add products
+	assembler_group.add {
+		type = "flow" --[[X--]],
+		name = "productsSection",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+
+	local products_section = assembler_group.productsSection
+
+	products_section.add {
+		type = "label",
+		name = "sectionLabel",
+		caption = "Products",
+		visible = false --[[*--]]
+	}
+
+	--add warningGroup and be stupid about it wtf
+	local warning_group = playersGui["ACT2_frame_" .. playersGui.player_index].warningGroup.add {
+		type = "flow" --[[X--]],
+		name = "warningGroup",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+	warning_group.add {
+		type = "label",
+		name = "warningLabel",
+		caption = "",
+		visible = false --[[*--]]
+	}
+
+	--add machineGroup
+	playersGui["ACT2_frame_" .. playersGui.player_index].add {
+		type = "flow" --[[X--]],
+		name = "machineGroup",
+		direction = "vertical",
+		visible = false --[[*--]]
+	}
+
+	local machine_group = playersGui["ACT2_frame_" .. playersGui.player_index].machineGroup
+
+	machine_group.add {
+		type = "label",
+		name = "machineLabel",
+		caption = "Adjust number of machines",
+		tooltip = { 'tooltips.scroll-wheel' },
+		visible = false --[[*--]]
+	}
+	machine_group.add {
+		type = "flow" --[[X--]],
+		name = "sliderSection",
+		direction = "horizontal",
+		tooltip = { 'tooltips.scroll-wheel' },
+		visible = false --[[*--]]
+	}
+
+	machine_group.sliderSection.add {
+		type = "sprite-button",
+		name = "Sub5-ACT2-sliderButton",
+		tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" },
+		sprite = spriteCheck(player, "editor_speed_down"),
+		style = "ACT2_buttons", visible = false --[[*--]]
+	}
+	machine_group.sliderSection.add {
+		type = "sprite-button",
+		name = "Sub1-ACT2-sliderButton",
+		tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' },' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "-7", "-10" },
+		sprite = spriteCheck(player, "left_arrow"),
+		style = "ACT2_buttons",
+		visible = false --[[*--]] }
+
+	machine_group.sliderSection.add {
+		type = "slider",
+		name = playersGui.player_index .. "_slider",
+		minimum_value = 1,
+		maximum_value = storage.ACT2[player.name]["max-slider-value"],
+		tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]]
+	}
+	
+	machine_group.sliderSection.add {
+		type = "sprite-button",
+		name = "Add1-ACT2-sliderButton",
+		tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "+7", "+10" },
+		sprite = spriteCheck(player, "right_arrow"),
+		style = "ACT2_buttons",
+		visible = false --[[*--]]
+	}
+	machine_group.sliderSection.add {
+		type = "sprite-button",
+		name = "Add5-ACT2-sliderButton",
+		tooltip = { 'tooltips.add-sub', "+5", storage.ACT2[player.name]["max-slider-value"], "+31", "+25" },
+		sprite = spriteCheck(player, "editor_speed_up"),
+		style = "ACT2_buttons",
+		visible = false --[[*--]]
+	}
+
+	machine_group.sliderSection.add {
+		type = "label",
+		name = "sliderLabel",
+		caption = "",
+		visible = false --[[*--]]
+	}
+
+end
+
 
 local function updateRadio(currentGuiSection)
 	guiVisibleAttrDescend(currentGuiSection, true)
@@ -635,119 +920,6 @@ local function updateMachine(currentGuiSection, sliderValue, entity)
 	currentGuiSection.sliderSection[currentGuiSection.player_index .. "_slider"].slider_value = sliderValue
 end
 
-local function desiredGuiTypeEntity(event)
-	if event.gui_type == defines.gui_type.entity then
-		return true
-	else
-		return false
-	end
-end
-
-local function desiredGuiNameSlider(event)
-	if event.element.name == event.player_index .. "_slider" then
-		return true
-	else
-		return false
-	end
-end
-
-local function desiredEntity(entity)
-	if entity and ( --add in reactor?
-			entity.type:find("assembling%-machine") or
-			entity.type:find("furnace") and not entity.name:find("reverse") or
-			entity.type:find("rocket%-silo") or
-			entity.type:find("lab") or
-			entity.type:find("mining%-drill")) then
-		return true
-	else
-		return false
-	end
-end
-
-local function toggleRadio(element)
-	for k, v in pairs(element.parent.children_names) do
-		if element.parent.children[k].type ~= "radiobutton" then return end
-		if v ~= element.name then
-			element.parent.children[k].state = not element.parent.children[k].state
-		end
-	end
-end
-
-local function determineMinOrSec(ACT2_time_second)
-	if ACT2_time_second.state then
-		return { value = 1, time = { 'captions.perSec' }, captions = 'captions.seconds' }
-	else
-		return { value = 60, time = { 'captions.perMin' }, captions = 'captions.minutes' }
-	end
-end
-
-local function setupGui(player, playersGui)
-	-- outside container
-	playersGui.add {gui = defines.relative_gui_type.controller_gui, position = defines.relative_gui_position.top, type = "frame", name = "ACT2_frame_" .. playersGui.player_index, direction = "vertical", visible = true }
-	
-	--add assemblerGroup
-	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "assemblerGroup", direction = "horizontal", visible = false --[[*--]] }
-	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].assemblerGroup
-
-	--"main" recipe section
-	assembler_group.add { type = "flow" --[[X--]], name = "recipeRadioWrap", direction = "vertical", visible = false --[[*--]] }
-	assembler_group.recipeRadioWrap.add { type = "flow" --[[X--]], name = "recipeSection", direction = "vertical", visible = false --[[*--]] }
-	local recipe_section = assembler_group.recipeRadioWrap.recipeSection
-
-	recipe_section.add { type = "label", name = "recipeLabel", caption = "Recipe", visible = false --[[*--]] }
-	recipe_section.add { type = "flow" --[[X--]], name = "recipe", direction = "horizontal", visible = false --[[*--]] }
-	recipe_section.recipe.add { type = "sprite-button", name = "recipeSprite", tooltip = "", sprite = "", visible = false --[[*--]] }
-	recipe_section.recipe.add { type = "label", name = "recipeCraftTime", caption = 'craft time', visible = false --[[*--]] }
-
-	-- if no recipe, all below is(should) not visible ***
-
-	--add radio
-	assembler_group.recipeRadioWrap.add { type = "flow", name = "radioSection", direction = "horizontal", visible = false }
-	local radio_section = assembler_group.recipeRadioWrap.radioSection
-	radio_section.add { type = "flow", name = "radioLables", direction = "vertical", visible = false }
-	radio_section.add { type = "flow", name = "radioButtons", direction = "vertical", visible = false, style =
-	"ACT2_vertical_flow" }
-
-	radio_section.radioLables.add { type = "label", name = "labelTimeSecond", caption = "Seconds", tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' }, visible = false }
-	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeSecond", tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' }, state = true, visible = false }
-
-	radio_section.radioLables.add { type = "label", name = "labelTimeMinute", caption = "Minutes", tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' }, visible = false }
-	radio_section.radioButtons.add { type = "radiobutton", name = "ACTTimeMinute", tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' }, state = false, visible = false }
-
-	--add ingredients
-	assembler_group.add { type = "flow" --[[X--]], name = "ingredientsSection", direction = "vertical", visible = false --[[*--]] }
-	local ingredients_section = assembler_group.ingredientsSection
-
-	ingredients_section.add { type = "label", name = "sectionLabel", caption = "Ingredients", visible = false --[[*--]] }
-
-	--add products
-	assembler_group.add { type = "flow" --[[X--]], name = "productsSection", direction = "vertical", visible = false --[[*--]] }
-	local products_section = assembler_group.productsSection
-
-	products_section.add { type = "label", name = "sectionLabel", caption = "Products", visible = false --[[*--]] }
-
-	--add warningGroup
-	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "warningGroup", direction = "vertical", visible = false --[[*--]] }
-	local warning_group = playersGui["ACT2_frame_" .. playersGui.player_index].warningGroup
-	warning_group.add { type = "label", name = "warningLabel", caption = "", visible = false --[[*--]] }
-
-	--add machineGroup
-	playersGui["ACT2_frame_" .. playersGui.player_index].add { type = "flow" --[[X--]], name = "machineGroup", direction = "vertical", visible = false --[[*--]] }
-	local machine_group = playersGui["ACT2_frame_" .. playersGui.player_index].machineGroup
-
-	machine_group.add { type = "label", name = "machineLabel", caption = "Adjust number of machines", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
-	machine_group.add { type = "flow" --[[X--]], name = "sliderSection", direction = "horizontal", tooltip = { 'tooltips.scroll-wheel' }, visible = false --[[*--]] }
-
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub5-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "-5", "1", "-31", "-25" }, sprite = spriteCheck(player, "editor_speed_down"), style = "ACT2_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Sub1-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "-1", { '', { 'tooltips.dn' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "-7", "-10" }, sprite = spriteCheck(player, "left_arrow"), style = "ACT2_buttons", visible = false --[[*--]] }
-
-	machine_group.sliderSection.add { type = "slider", name = playersGui.player_index .. "_slider", minimum_value = 1, maximum_value = storage.ACT2[player.name]["max-slider-value"], tooltip = { 'tooltips.scroll-wheel' }, style = "slider", visible = false --[[*--]] }
-	--*** --[[ value = 0,--]]--[[truncateNumber(0--[[sliderValue--]], 0)--]]
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add1-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "+1", { '', { 'tooltips.up' }, ' ', storage.ACT2[player.name]["max-slider-value"] / 2 }, "+7", "+10" }, sprite = spriteCheck(player, "right_arrow"), style = "ACT2_buttons", visible = false --[[*--]] }
-	machine_group.sliderSection.add { type = "sprite-button", name = "Add5-ACT2-sliderButton", tooltip = { 'tooltips.add-sub', "+5", storage.ACT2[player.name]["max-slider-value"], "+31", "+25" }, sprite = spriteCheck(player, "editor_speed_up"), style = "ACT2_buttons", visible = false --[[*--]] }
-
-	machine_group.sliderSection.add { type = "label", name = "sliderLabel", caption = "", visible = false --[[*--]] }
-end
 
 local function run(event)
 	--event.gui_type == defines.gui_type.entity
@@ -767,9 +939,15 @@ local function run(event)
 	local frameName = "ACT2_frame_" .. playerIndex  -- The frame’s name
 	
 	-- Debug ui reset 
-	-- if playersGui[frameName] then
-	-- 	playersGui[frameName].destroy()  -- Properly remove the frame
-	-- end
+	local gui_roots = {"top", "left", "center", "screen", "goal"}
+
+	for _, name in ipairs(gui_roots) do
+		local element = player.gui[name]
+		if element[frameName] then
+		element[frameName].destroy()  -- Properly remove the frame
+		end
+	end
+	
 
 	if not playersGui[frameName] then
 		setupGui(player, playersGui)
@@ -813,11 +991,6 @@ local function run(event)
 	updateMachine(machine_group, truncateNumber(storage.ACT2_slider[player.name][recipe.name].value, 0), entity)
 end
 
-local function resetACT(event)
-	event.entity = game.players[event.player_index].opened
-	event.gui_type = defines.gui_type.entity
-	run(event)
-end
 
 local function changeGuiSliderButtons(event)
 	local shi = event.shift
@@ -892,6 +1065,26 @@ local function changeGuiSliderButtons(event)
 	run(event)
 end
 
+
+
+local function toggleRadio(element)
+	for k, v in pairs(element.parent.children_names) do
+		if element.parent.children[k].type ~= "radiobutton" then return end
+		if v ~= element.name then
+			element.parent.children[k].state = not element.parent.children[k].state
+		end
+	end
+end
+
+
+
+local function resetACT(event)
+	event.entity = game.players[event.player_index].opened
+	event.gui_type = defines.gui_type.entity
+	run(event)
+end
+
+
 local function playerSlid(event)
 	if not desiredGuiNameSlider(event) then return end
 	local playerIndex = event.player_index
@@ -930,6 +1123,16 @@ local function playerClickedGui(event)
 		changeGuiSliderButtons(event)
 		return
 	end
+end
+
+local function closeGui(event)
+	local playerIndex = event.player_index
+	local player = game.players[playerIndex]
+	if not player then return end
+	setsettings(player)
+	local guiLocation = storage.ACT2[player.name]["gui-location"]
+	local playersGui = player.gui[guiLocation]
+	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
 end
 
 local function radiobutton(event)
@@ -992,6 +1195,9 @@ local function modChange(event)
 		end
 	end
 end
+
+
+
 
 script.on_event(defines.events.on_gui_opened, run)
 

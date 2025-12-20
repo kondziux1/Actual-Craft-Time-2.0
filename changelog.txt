@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.7.1
+Date: ???
+  Optimizations:
+    - Optimised the truncateNumber, conditionalDecimalIncrease and amountMaxMinAverage functions.
+---------------------------------------------------------------------------------------------------
 Version: 0.7.0
 Date: 2025-05-02
   Bugfixes:
