@@ -63,6 +63,7 @@ local function findPrototypeData(playerName)
 	if not bltsInts[playerName] then
 		bltsInts[playerName] = { source = {} }
 	end
+	-- can it be sorted before loop like can we do this ?
 	for k, v in pairs(prototypes.entity) do
 		if k:find("transport%-belt") and not k:find("ground") and v.belt_speed then
 			bltsInts[playerName].source[k] = ((60 * v.belt_speed) / (1 / 8)) -- I don't remember why it needs 8/64(1/8) but it does: 8 items per tile?
@@ -515,32 +516,45 @@ local function guiDescendFind(currentGuiSection, tooltip, message, spritePath)
 		end
 	end
 end
--- po CO TO KURWA TU JEST JAKBY JESZCZE NIE WIEM ALE PO CO  OOO
-local function guiVisibleAttrAscend(currentGuiSection, bool)
-	--top level gui element or other ("top" or "left" (or "center"))
-	if currentGuiSection == nil then return end
-	--currentGuiSection is already true/false (assume parent is as well if a parent?)
-	if currentGuiSection.visible == bool then return end
 
-	currentGuiSection.visible = bool
-
-	if not currentGuiSection.parent then return end
-	guiVisibleAttrAscend(currentGuiSection.parent, bool)
+-- Iterates through the object's parents.
+local function guiVisibleAttrParent(currentGuiSection, bool)
+    local el = currentGuiSection
+    while el and el.valid do
+        if el.visible == bool then break end -- if this is true the above is also visible 
+        el.visible = bool
+        el = el.parent
+        -- GUI root does not have parents so it self-ends
+    end
 end
--- TO TEŻ NA CHUJ MI TO CZEMU W DRUGA STRONE POCO MASZ JUŻ W JEDNĄ POCO W DRUGOM
-local function guiVisibleAttrDescend(currentGuiSection, bool)
-	--or not next(currentGuiSection)  deleted that because it works without it and dont know any fix
-	if currentGuiSection == nil then return end --invalid or an enpty table
-	local player = game.players[currentGuiSection.player_index]
-	if not player then return end
-	if currentGuiSection.parent and currentGuiSection.parent.visible ~= bool and not (currentGuiSection.parent.name == storage.ACT2[player.name]["gui-location"]) and currentGuiSection.parent.name ~= "ACT2_frame_" .. currentGuiSection.player_index then
-		guiVisibleAttrAscend(currentGuiSection.parent, bool)
-	end
-	currentGuiSection.visible = bool
 
-	for _, v in pairs(currentGuiSection.children) do
-		guiVisibleAttrDescend(v, bool)
-	end
+-- Iterates through the object's children.
+local function guiVisibleAttrChild(currentGuiSection, bool, p_index, storage_root)
+    if not (currentGuiSection and currentGuiSection.valid) then return end
+
+    -- We generate the data once and we send them to requrence
+    p_index = p_index or currentGuiSection.player_index
+    storage_root = storage_root or storage.ACT2[game.players[p_index].name]["gui-location"]
+    local frame_name = "ACT2_frame_" .. p_index
+
+    -- checking for parents 
+    local parent = currentGuiSection.parent
+    if parent and parent.valid and parent.visible ~= bool then
+        local p_name = parent.name
+        if p_name ~= storage_root and p_name ~= frame_name then
+            guiVisibleAttrParent(parent, bool)
+        end
+    end
+
+    currentGuiSection.visible = bool
+
+    
+    local children = currentGuiSection.children
+    if #children > 0 then
+        for i = 1, #children do
+            guiVisibleAttrChild(children[i], bool, p_index, storage_root)
+        end
+    end
 end
 
 local function setsettings(player)
@@ -610,29 +624,45 @@ end
 
 local function setupGui(player, playersGui)
 	-- outside container
-	local main_frame = playersGui.add {
-		type = "frame",
-		name = "ACT2_frame_" .. playersGui.player_index,
-		direction = "vertical",
-		visible = true
+	local main_frame = player.gui.screen.add {
+    type = "frame",
+    name = "ACT2_frame_" .. player.index,
+    direction = "vertical",
 	}
-	-- title bar for grabbing and better look
-	local titlebar = playersGui.add {
+
+	main_frame.style.use_header_filler = true
+	
+	local title_bar = main_frame.add { 
 		type = "flow",
 		direction = "horizontal",
-		name="title_bar"
-		}
+		name = "title_bar",
+	}
 
-	titlebar.add{
-		type = "label",
-		caption = "Actual Craft Time 2.0",
-		style = "frame_title",
+	title_bar.drag_target = main_frame
+
+	local title_header = title_bar.add{
+		type = "empty-widget",
+		style = "draggable_space_header",
 		ignored_by_interaction = true
 	}
-	main_frame.drag_target = titlebar
+	title_header.style.height = 24
+	title_header.style.horizontally_stretchable = true
+
+	local title_label = title_bar.add{
+		type = "label",
+		caption = "Actual Craft Time 2.0 GUI TEST",
+		style = "frame_title",
+	}
+	title_label.ignored_by_interaction = true
+
+
+
+	
+	
+	
 
 	--add assemblerGroup
-	playersGui["ACT2_frame_" .. playersGui.player_index].add {
+	local assembler_group = main_frame.add {
 		type = "flow" --[[X--]],
 		name = "assemblerGroup",
 		direction = "horizontal",
@@ -640,22 +670,19 @@ local function setupGui(player, playersGui)
 	}
 
 	--"main" recipe section
-	local assembler_group = playersGui["ACT2_frame_" .. playersGui.player_index].add {
+	assembler_group.add {
 		type = "flow" --[[X--]],
 		name = "recipeRadioWrap",
 		direction = "vertical",
 		visible = false --[[*--]]
 	}
-
-	assembler_group.recipeRadioWrap.add {
+	
+	local recipe_section = assembler_group.recipeRadioWrap.add {
 		type = "flow" --[[X--]],
 		name = "recipeSection",
 		direction = "vertical",
 		visible = false --[[*--]]
 	}
-
-	local recipe_section = assembler_group.recipeRadioWrap.recipeSection
-
 
 	recipe_section.add {
 		type = "label",
@@ -775,7 +802,7 @@ local function setupGui(player, playersGui)
 	}
 
 	--add warningGroup and be stupid about it wtf
-	local warning_group = playersGui["ACT2_frame_" .. playersGui.player_index].warningGroup.add {
+	local warning_group = main_frame.add {
 		type = "flow" --[[X--]],
 		name = "warningGroup",
 		direction = "vertical",
@@ -789,14 +816,12 @@ local function setupGui(player, playersGui)
 	}
 
 	--add machineGroup
-	playersGui["ACT2_frame_" .. playersGui.player_index].add {
+	local machine_group = main_frame.add {
 		type = "flow" --[[X--]],
 		name = "machineGroup",
 		direction = "vertical",
 		visible = false --[[*--]]
 	}
-
-	local machine_group = playersGui["ACT2_frame_" .. playersGui.player_index].machineGroup
 
 	machine_group.add {
 		type = "label",
@@ -864,11 +889,11 @@ end
 
 
 local function updateRadio(currentGuiSection)
-	guiVisibleAttrDescend(currentGuiSection, true)
+	guiVisibleAttrChild(currentGuiSection, true)
 end
 
 local function updateRecipe(currentGuiSection, tooltip, message, spritePath)
-	guiVisibleAttrDescend(currentGuiSection, true)
+	guiVisibleAttrChild(currentGuiSection, true)
 	guiDescendFind(currentGuiSection, tooltip, message, spritePath)
 end
 
@@ -910,12 +935,12 @@ local function updateItem(recipe, items, current_section, minOrSec)
 end
 
 local function updateWarning(currentGuiSection, message)
-	guiVisibleAttrDescend(currentGuiSection, true)
+	guiVisibleAttrChild(currentGuiSection, true)
 	currentGuiSection.warningLabel.caption = message
 end
 
 local function updateMachine(currentGuiSection, sliderValue, entity)
-	guiVisibleAttrDescend(currentGuiSection, true)
+	guiVisibleAttrChild(currentGuiSection, true)
 	currentGuiSection.sliderSection.sliderLabel.caption = { '', sliderValue, " ", entity.localised_name }
 	currentGuiSection.sliderSection[currentGuiSection.player_index .. "_slider"].slider_value = sliderValue
 end
@@ -930,10 +955,13 @@ local function run(event)
 	if not desiredEntity(entity) then return end
 
 	local playerIndex = event.player_index
-	local player = game.players[playerIndex]
+	local player = game.get_player(event.player_index)
+
+
 	if not player then return end
 	setsettings(player)
-	local guiLocation = storage.ACT2[player.name]["gui-location"]
+	-- local guiLocation = storage.ACT2[player.name]["gui-location"]
+	local guiLocation = "screen"
 	local playersGui = player.gui[guiLocation] --top or left	
 
 	local frameName = "ACT2_frame_" .. playerIndex  -- The frame’s name
@@ -952,8 +980,8 @@ local function run(event)
 	if not playersGui[frameName] then
 		setupGui(player, playersGui)
 	end
-
-	guiVisibleAttrDescend(playersGui[frameName], false)
+	do return end
+	guiVisibleAttrChild(playersGui[frameName], false)
 	findPrototypeData(player.name)
 	local recipe = getRecipe(entity, player.name)
 	local assembler_group = playersGui[frameName].assemblerGroup
@@ -1132,7 +1160,7 @@ local function closeGui(event)
 	setsettings(player)
 	local guiLocation = storage.ACT2[player.name]["gui-location"]
 	local playersGui = player.gui[guiLocation]
-	guiVisibleAttrDescend(playersGui["ACT2_frame_" .. playersGui.player_index], false)
+	guiVisibleAttrChild(playersGui["ACT2_frame_" .. playersGui.player_index], false)
 end
 
 local function radiobutton(event)
