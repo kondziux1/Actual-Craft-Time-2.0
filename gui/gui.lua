@@ -13,7 +13,7 @@ local function getGuiRoot(player)
 	ACTStorage.setsettings(player)
 	local s = ACTStorage.getSettings(player.name)
 	local loc = s["gui-location"]
-	if loc == "screen" or loc == "top" or loc == "left" then
+	if loc == "top" or loc == "left" then
 		return player.gui[loc]
 	end
 	return player.gui.screen
@@ -22,7 +22,11 @@ end
 local function findFrame(player)
 	if not player or not player.valid then return nil end
 	local frameName = getFrameName(player.index)
-	local roots = { "screen", "top", "left" }
+	local screen = player.gui.screen
+	if screen and screen[frameName] and screen[frameName].valid then
+		return screen[frameName]
+	end
+	local roots = { "top", "left" }
 	for _, rootName in ipairs(roots) do
 		local root = player.gui[rootName]
 		if root and root[frameName] and root[frameName].valid then
@@ -85,7 +89,7 @@ local function addNextInfoWrap(parent_section, i)
 		name = "item_sprite",
 		tooltip = "",
 		visible = false,
-		style = "ACT2_buttons"
+		style = "ACT2_item_slot"
 	}
 	itemIPSWrap.add {
 		type = "label",
@@ -131,6 +135,11 @@ end
 -- Iterates through the object's children.
 local function guiVisibleAttrChild(currentGuiSection, bool, p_index, storage_root)
 	if not (currentGuiSection and currentGuiSection.valid) then return end
+
+	-- Never hide title_bar when resetting children visibility
+	if currentGuiSection.name == "title_bar" and not bool then
+		return
+	end
 
 	p_index = p_index or currentGuiSection.player_index
 	local player = game.players[p_index]
@@ -186,29 +195,57 @@ local function setupGui(player)
 
 	main_frame.style.use_header_filler = true
 
-	local title_bar = main_frame.add {
+	if isScreen then
+		-- Restore saved position or default to near top-left
+		local savedLocation = ACTStorage.getWindowLocation(player.name)
+		if savedLocation and savedLocation.x and savedLocation.y then
+			main_frame.location = savedLocation
+		else
+			main_frame.location = { x = 20, y = 80 }
+		end
+	end
+
+	local title_flow = main_frame.add {
 		type = "flow",
 		direction = "horizontal",
 		name = "title_bar",
 	}
-
 	if isScreen then
-		title_bar.drag_target = main_frame
+		title_flow.drag_target = main_frame
 	end
+	title_flow.style.horizontally_stretchable = true
+	title_flow.style.horizontal_spacing = 8
+	title_flow.style.bottom_padding = 4
 
-	local title_header = title_bar.add {
-		type = "empty-widget",
-		style = "draggable_space_header",
-		ignored_by_interaction = true
-	}
-	title_header.style.height = 24
-	title_header.style.horizontally_stretchable = true
-
-	local title_label = title_bar.add {
+	local title_label = title_flow.add {
 		type = "label",
+		name = "title_label",
 		caption = "Actual Craft Time 2.0",
 		style = "frame_title",
 		ignored_by_interaction = true
+	}
+	if isScreen then
+		title_label.drag_target = main_frame
+	end
+
+	local title_pusher = title_flow.add {
+		type = "empty-widget",
+		name = "title_pusher",
+		style = isScreen and "draggable_space_header" or "empty_widget",
+		ignored_by_interaction = true
+	}
+	title_pusher.style.height = 24
+	title_pusher.style.horizontally_stretchable = true
+	if isScreen then
+		title_pusher.drag_target = main_frame
+	end
+
+	local close_button = title_flow.add {
+		type = "sprite-button",
+		name = "ACT2_close_button",
+		style = "frame_action_button",
+		sprite = "utility/close",
+		tooltip = { "gui.close" }
 	}
 
 	-- Assembler group
@@ -251,7 +288,8 @@ local function setupGui(player)
 		name = "recipeSprite",
 		tooltip = "",
 		sprite = "",
-		visible = false
+		visible = false,
+		style = "ACT2_recipe_slot"
 	}
 	recipe_section.recipe.add {
 		type = "label",
@@ -533,9 +571,25 @@ local function run(event)
 	end
 	if not frame or not frame.valid then return end
 
+	-- Ensure window position is restored if on screen
+	local isScreen = (frame.parent == player.gui.screen)
+	if isScreen and not frame.location then
+		frame.location = ACTStorage.getWindowLocation(player.name)
+	end
+
 	-- Reset frame visibility to prepare for update
 	guiVisibleAttrChild(frame, false)
 	frame.visible = true
+
+	-- Ensure title bar and its controls are always visible
+	if frame.title_bar and frame.title_bar.valid then
+		frame.title_bar.visible = true
+		for _, child in pairs(frame.title_bar.children) do
+			if child.valid then
+				child.visible = true
+			end
+		end
+	end
 
 	local recipe = ACTRecipe.getRecipe(entity, player.name)
 	local assembler_group = frame.assemblerGroup
@@ -687,15 +741,32 @@ local function playerSlid(event)
 	end
 end
 
+local function closeGui(event)
+	local playerIndex = event.player_index
+	local player = game.players[playerIndex]
+	if not player or not player.valid then return end
+
+	local frame = findFrame(player)
+	if frame and frame.valid then
+		guiVisibleAttrChild(frame, false)
+	end
+end
+
 local function playerClickedGui(event)
 	if not event.element or not event.element.valid then return end
+	local elementName = event.element.name
+
+	if elementName == "ACT2_close_button" then
+		closeGui(event)
+		return
+	end
+
 	if event.element.type ~= "sprite-button" then return end
 
 	local playerIndex = event.player_index
 	local player = game.players[playerIndex]
 	if not player or not player.valid then return end
 
-	local elementName = event.element.name
 	if elementName == "recipeSprite" then
 		resetACT(event)
 		return
@@ -750,14 +821,13 @@ local function customInputForRadioButton(event)
 	end
 end
 
-local function closeGui(event)
-	local playerIndex = event.player_index
-	local player = game.players[playerIndex]
-	if not player or not player.valid then return end
-
-	local frame = findFrame(player)
-	if frame and frame.valid then
-		guiVisibleAttrChild(frame, false)
+local function onGuiLocationChanged(event)
+	if not event.element or not event.element.valid then return end
+	if event.element.name == getFrameName(event.player_index) then
+		local player = game.get_player(event.player_index)
+		if player and player.valid and event.element.location then
+			ACTStorage.setWindowLocation(player.name, event.element.location)
+		end
 	end
 end
 
@@ -768,5 +838,6 @@ ACTGui.onGuiClick = playerClickedGui
 ACTGui.onGuiValueChanged = playerSlid
 ACTGui.onGuiCheckedStateChanged = radiobutton
 ACTGui.onCustomInput = customInputForRadioButton
+ACTGui.onGuiLocationChanged = onGuiLocationChanged
 
 return ACTGui

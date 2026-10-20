@@ -3,8 +3,8 @@ data:extend({
 		type = "string-setting",
 		name = "ACT2-Gui-Location",
 		setting_type = "runtime-per-user",
-		default_value = "top",
-		allowed_values = { "top", "left", "relative", "screen" }
+		default_value = "screen",
+		allowed_values = { "screen", "left", "top" }
 	},
 	{
 		type = "bool-setting",
