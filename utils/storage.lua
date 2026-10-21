@@ -33,6 +33,10 @@ function ACTStorage.setsettings(player)
 	local simpleText = modSettings["ACT2-simple-text"] and modSettings["ACT2-simple-text"].value or false
 	local maxSlider = modSettings["ACT2-max-slider-value"] and modSettings["ACT2-max-slider-value"].value or 200
 	local sensitivity = modSettings["ACT2-slider-sensitivity"] and modSettings["ACT2-slider-sensitivity"].value or 5
+	local showQuality = true
+	if modSettings["ACT2-show-quality-chance"] then
+		showQuality = modSettings["ACT2-show-quality-chance"].value
+	end
 
 	if not storage.ACT2[player.name] then
 		storage.ACT2[player.name] = {
@@ -41,6 +45,7 @@ function ACTStorage.setsettings(player)
 			["max-slider-value"] = maxSlider,
 			["sensitivity-value"] = sensitivity,
 			["window-location"] = { x = 20, y = 80 },
+			["show-quality-chance"] = showQuality,
 		}
 	else
 		local s = storage.ACT2[player.name]
@@ -49,6 +54,7 @@ function ACTStorage.setsettings(player)
 		if s["max-slider-value"] ~= maxSlider then s["max-slider-value"] = maxSlider end
 		if s["sensitivity-value"] ~= sensitivity then s["sensitivity-value"] = sensitivity end
 		if not s["window-location"] then s["window-location"] = { x = 20, y = 80 } end
+		if s["show-quality-chance"] == nil then s["show-quality-chance"] = showQuality end
 	end
 end
 
@@ -62,7 +68,22 @@ function ACTStorage.getSettings(playerName)
 		["max-slider-value"] = 200,
 		["sensitivity-value"] = 5,
 		["window-location"] = { x = 20, y = 80 },
+		["show-quality-chance"] = true,
 	}
+end
+
+function ACTStorage.getQualityToggle(playerName)
+	if storage.ACT2 and storage.ACT2[playerName] and storage.ACT2[playerName]["show-quality-chance"] ~= nil then
+		return storage.ACT2[playerName]["show-quality-chance"]
+	end
+	return true
+end
+
+function ACTStorage.setQualityToggle(playerName, value)
+	if not playerName then return end
+	if not storage.ACT2 then storage.ACT2 = {} end
+	if not storage.ACT2[playerName] then storage.ACT2[playerName] = {} end
+	storage.ACT2[playerName]["show-quality-chance"] = value
 end
 
 function ACTStorage.getWindowLocation(playerName)

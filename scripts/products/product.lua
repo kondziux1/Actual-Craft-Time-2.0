@@ -22,6 +22,11 @@ function ACTProduct.expandProducts(products, sec, playerName, effects, recipeNam
 		prodBonus = prodBonus + recipeBonus
 	end
 
+	local qualityBonus = 0
+	if effects and effects.quality and effects.quality.bonus then
+		qualityBonus = effects.quality.bonus
+	end
+
 	local craftTime = math.max(sec, 1 / 60)
 
 	for k, product in pairs(products) do
@@ -41,6 +46,7 @@ function ACTProduct.expandProducts(products, sec, playerName, effects, recipeNam
 			localised_name = ACTLocalisation.getLocalisedName(product.name),
 			ips = IPS,
 			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),
+			quality_chance = qualityBonus,
 		}
 		productTable[k] = itemEntry
 	end
@@ -59,6 +65,7 @@ function ACTProduct.expandProducts(products, sec, playerName, effects, recipeNam
 			localised_name = ACTLocalisation.getLocalisedName("space-science-pack"),
 			ips = IPS,
 			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),
+			quality_chance = qualityBonus,
 		})
 	end
 
@@ -86,6 +93,11 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 		prodBonus = prodBonus + playerForce.mining_drill_productivity_bonus
 	end
 
+	local qualityBonus = 0
+	if effects and effects.quality and effects.quality.bonus then
+		qualityBonus = effects.quality.bonus
+	end
+
 	local craftTime = math.max(sec, 1 / 60)
 
 	for k, product in pairs(products) do
@@ -105,6 +117,7 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 			localised_name = ACTLocalisation.getLocalisedName(product.name),
 			ips = IPS,
 			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),
+			quality_chance = qualityBonus,
 		}
 		productTable[k] = itemEntry
 	end

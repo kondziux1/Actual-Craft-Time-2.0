@@ -82,8 +82,10 @@ local function addNextInfoWrap(parent_section, i)
 	local itemIPSWrap = wrap.add {
 		type = "flow",
 		name = "itemIPSWrap",
+		direction = "horizontal",
 		visible = false
 	}
+	itemIPSWrap.style.vertical_align = "center"
 	itemIPSWrap.add {
 		type = "sprite-button",
 		name = "item_sprite",
@@ -94,6 +96,13 @@ local function addNextInfoWrap(parent_section, i)
 	itemIPSWrap.add {
 		type = "label",
 		name = "IPSLabel",
+		tooltip = "",
+		caption = "",
+		visible = false
+	}
+	itemIPSWrap.add {
+		type = "label",
+		name = "qualityIPSLabel",
 		tooltip = "",
 		caption = "",
 		visible = false
@@ -240,6 +249,23 @@ local function setupGui(player)
 		title_pusher.drag_target = main_frame
 	end
 
+	if script.active_mods["quality"] then
+		local showQuality = ACTStorage.getQualityToggle(player.name)
+		local qSprite = "utility/slot_icon_module"
+		if helpers.is_valid_sprite_path("item/quality-module") then
+			qSprite = "item/quality-module"
+		end
+		title_flow.add {
+			type = "sprite-button",
+			name = "ACT2_quality_toggle",
+			style = "frame_action_button",
+			sprite = qSprite,
+			auto_toggle = true,
+			toggled = showQuality,
+			tooltip = showQuality and { "tooltips.ACT2_quality_toggle_on" } or { "tooltips.ACT2_quality_toggle_off" }
+		}
+	end
+
 	local close_button = title_flow.add {
 		type = "sprite-button",
 		name = "ACT2_close_button",
@@ -291,10 +317,22 @@ local function setupGui(player)
 		visible = false,
 		style = "ACT2_recipe_slot"
 	}
-	recipe_section.recipe.add {
+	local recipeInfo = recipe_section.recipe.add {
+		type = "flow",
+		name = "recipeInfo",
+		direction = "vertical",
+		visible = false
+	}
+	recipeInfo.add {
 		type = "label",
 		name = "recipeCraftTime",
 		caption = "craft time",
+		visible = false
+	}
+	recipeInfo.add {
+		type = "label",
+		name = "qualityChanceLabel",
+		caption = "",
 		visible = false
 	}
 
@@ -477,15 +515,60 @@ local function updateRadio(currentGuiSection)
 	guiVisibleAttrChild(currentGuiSection, true)
 end
 
-local function updateRecipe(currentGuiSection, tooltip, message, spritePath)
+local function updateRecipe(currentGuiSection, tooltip, message, spritePath, qualityBonus, showQuality)
 	guiVisibleAttrChild(currentGuiSection, true)
 	guiDescendFind(currentGuiSection, tooltip, message, spritePath)
+
+	local qLabel = nil
+	if currentGuiSection.recipe and currentGuiSection.recipe.recipeInfo and currentGuiSection.recipe.recipeInfo.qualityChanceLabel then
+		qLabel = currentGuiSection.recipe.recipeInfo.qualityChanceLabel
+	end
+
+	if qLabel and qLabel.valid then
+		if qualityBonus and qualityBonus > 0 and showQuality then
+			local qPct = ACTMath.truncateNumber(qualityBonus * 100, 1)
+			qLabel.caption = { '', "[color=160,225,120]★ Quality: +", tostring(qPct), "%[/color]" }
+			local breakdownStr = "Quality module bonus: +" .. tostring(qPct) .. "%\n" ..
+				"Chance to upgrade product tier:\n" ..
+				"  • Uncommon: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 90, 2)) .. "%\n" ..
+				"  • Rare: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 9, 2)) .. "%\n" ..
+				"  • Epic: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 0.9, 3)) .. "%\n" ..
+				"  • Legendary: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 0.1, 4)) .. "%"
+			qLabel.tooltip = breakdownStr
+			qLabel.visible = true
+		else
+			qLabel.visible = false
+		end
+	end
+end
+
+local function formatHourlyRate(ratePerSec)
+	local rph = ratePerSec * 3600
+	if rph >= 10000 then
+		return "~" .. tostring(ACTMath.truncateNumber(rph / 1000, 1)) .. "k / 1h"
+	elseif rph >= 10 then
+		return "~" .. tostring(math.floor(rph + 0.5)) .. " / 1h"
+	elseif rph >= 1 then
+		local val = ACTMath.truncateNumber(rph, 1)
+		if val == math.floor(val) then
+			return "~" .. tostring(math.floor(val)) .. " / 1h"
+		end
+		return "~" .. tostring(val) .. " / 1h"
+	elseif rph >= 0.01 then
+		return "~" .. tostring(ACTMath.truncateNumber(rph, 2)) .. " / 1h"
+	elseif rph > 0 then
+		return "~" .. tostring(ACTMath.truncateNumber(rph, 3)) .. " / 1h"
+	else
+		return "0 / 1h"
+	end
 end
 
 local function updateItem(recipe, items, current_section, minOrSec)
 	local player = current_section.gui.player
 	if not player or not player.valid then return end
 	if not items then return end
+
+	local showQuality = ACTStorage.getQualityToggle(player.name)
 
 	for k, v in pairs(items) do
 		if not current_section["infoWrap" .. k] then
@@ -506,15 +589,60 @@ local function updateItem(recipe, items, current_section, minOrSec)
 			sliderVal = storage.ACT2_slider[player.name][recipe.name].value or 1
 		end
 
+		local totalRate = v.ips * sliderVal * minOrSec.value
 		guiElementInfoWrap_K.itemIPSWrap.IPSLabel.caption = { '',
-			ACTMath.truncateNumber(v.ips * sliderVal * minOrSec.value, 2),
+			ACTMath.truncateNumber(totalRate, 2),
 			minOrSec.time
 		}
 
-		if v.probability and v.probability < 1 then
-			guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = (v.probability * 100) .. "%"
+		local hasQuality = v.quality_chance and v.quality_chance > 0 and showQuality
+		local qLabel = guiElementInfoWrap_K.itemIPSWrap.qualityIPSLabel
+		if hasQuality then
+			local upgradedRate = totalRate * v.quality_chance
+			local baseRate = totalRate * (1 - v.quality_chance)
+			local qPercent = tostring(ACTMath.truncateNumber(v.quality_chance * 100, 1)) .. "%"
+			local timeSuffix = (minOrSec.value == 1) and "/sec" or "/min"
+
+			-- Base rate in items per second for hourly projections
+			local basePerSec = (v.ips * sliderVal) * v.quality_chance
+
+			if qLabel and qLabel.valid then
+				qLabel.visible = true
+				qLabel.caption = { '',
+					" [color=160,225,120](★ ",
+					ACTMath.truncateNumber(upgradedRate, 2),
+					minOrSec.time,
+					")[/color]"
+				}
+			end
+
+			local tipText = "\nTotal: " .. tostring(ACTMath.truncateNumber(totalRate, 2)) .. timeSuffix .. "\n" ..
+				"Quality upgrade chance: +" .. qPercent .. "\n" ..
+				"  Base quality: " .. tostring(ACTMath.truncateNumber(baseRate, 2)) .. timeSuffix .. " (" .. tostring(ACTMath.truncateNumber((1 - v.quality_chance) * 100, 1)) .. "%)\n" ..
+				"  Upgraded (★): " .. tostring(ACTMath.truncateNumber(upgradedRate, 2)) .. timeSuffix .. " (" .. qPercent .. ")\n" ..
+				"    • Uncommon: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.9, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.90) .. ")\n" ..
+				"    • Rare: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.09, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.09) .. ")\n" ..
+				"    • Epic: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.009, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.009) .. ")\n" ..
+				"    • Legendary: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.001, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.001) .. ")"
+
+			if v.probability and v.probability < 1 then
+				tipText = tipText .. "\nRecycling return: " .. tostring(v.probability * 100) .. "%"
+			end
+
+			local fullTip = { "", v.localised_name or v.name, tipText }
+			guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = fullTip
+			if qLabel and qLabel.valid then
+				qLabel.tooltip = fullTip
+			end
 		else
-			guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = ""
+			if qLabel and qLabel.valid then
+				qLabel.visible = false
+			end
+			if v.probability and v.probability < 1 then
+				guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = (v.probability * 100) .. "%"
+			else
+				guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = ""
+			end
 		end
 
 		if v.type ~= "fluid" and v.pbar then
@@ -589,6 +717,11 @@ local function run(event)
 				child.visible = true
 			end
 		end
+		if frame.title_bar.ACT2_quality_toggle and frame.title_bar.ACT2_quality_toggle.valid then
+			local showQuality = ACTStorage.getQualityToggle(player.name)
+			frame.title_bar.ACT2_quality_toggle.toggled = showQuality
+			frame.title_bar.ACT2_quality_toggle.tooltip = showQuality and { "tooltips.ACT2_quality_toggle_on" } or { "tooltips.ACT2_quality_toggle_off" }
+		end
 	end
 
 	local recipe = ACTRecipe.getRecipe(entity, player.name)
@@ -596,10 +729,14 @@ local function run(event)
 	if not assembler_group then return end
 
 	if not recipe then
+		assembler_group.visible = true
+		assembler_group.recipeRadioWrap.visible = true
 		updateRecipe(assembler_group.recipeRadioWrap.recipeSection,
 			{ 'tooltips.reset', entity.localised_name },
 			{ 'captions.no-recipe' },
-			spriteCheck(player, entity.name))
+			spriteCheck(player, entity.name),
+			0,
+			false)
 		return
 	end
 
@@ -608,11 +745,16 @@ local function run(event)
 	local radioSecond = assembler_group.recipeRadioWrap.radioSection.radioButtons.ACTTimeSecond
 	local minOrSec = ACTMath.determineMinOrSec(radioSecond)
 
+	local qualityBonus = (recipe.effects and recipe.effects.quality and recipe.effects.quality.bonus) or 0
+	local showQuality = ACTStorage.getQualityToggle(player.name)
+
 	updateRecipe(assembler_group.recipeRadioWrap.recipeSection,
 		{ 'tooltips.reset', recipe.localised_name },
 		{ minOrSec.captions, ACTMath.truncateNumber(math.max(recipe.seconds, 1 / 60) / minOrSec.value,
 			ACTMath.conditionalDecimalIncrease(recipe.seconds, 2)) },
-		spriteCheck(player, recipe.name))
+		spriteCheck(player, recipe.name),
+		qualityBonus,
+		showQuality)
 
 	updateRadio(assembler_group.recipeRadioWrap.radioSection)
 
@@ -758,6 +900,31 @@ local function playerClickedGui(event)
 
 	if elementName == "ACT2_close_button" then
 		closeGui(event)
+		return
+	end
+
+	if elementName == "ACT2_quality_toggle" then
+		local playerIndex = event.player_index
+		local player = game.players[playerIndex]
+		if not player or not player.valid then return end
+
+		local currentVal = ACTStorage.getQualityToggle(player.name)
+		local newVal = not currentVal
+		ACTStorage.setQualityToggle(player.name, newVal)
+
+		if event.element and event.element.valid then
+			event.element.toggled = newVal
+			event.element.tooltip = newVal and { "tooltips.ACT2_quality_toggle_on" } or { "tooltips.ACT2_quality_toggle_off" }
+		end
+
+		if player.opened and player.opened.valid and ACTRecipe.desiredEntity(player.opened) then
+			local refreshEvent = {
+				player_index = playerIndex,
+				entity = player.opened,
+				gui_type = defines.gui_type.entity
+			}
+			run(refreshEvent)
+		end
 		return
 	end
 

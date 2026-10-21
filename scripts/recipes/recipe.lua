@@ -55,7 +55,8 @@ local function getEffects(entity)
 		consumption = { bonus = 0.0 },
 		speed = { bonus = 0.0 },
 		productivity = { bonus = 0.0 },
-		pollution = { bonus = 0.0 }
+		pollution = { bonus = 0.0 },
+		quality = { bonus = 0.0 }
 	}
 	if entity and entity.valid and entity.effects then
 		if entity.effects.speed then
@@ -69,6 +70,9 @@ local function getEffects(entity)
 		end
 		if entity.effects.pollution then
 			effects.pollution.bonus = entity.effects.pollution
+		end
+		if entity.effects.quality and entity.effects.quality > 0 then
+			effects.quality.bonus = entity.effects.quality
 		end
 	end
 	return effects
@@ -102,6 +106,39 @@ end
 local function getRecipeFromFurnace(entity, playerName)
 	if entity.type:find("furnace") then
 		local recipe = entity.get_recipe()
+
+		-- Fallback to previous recipe if idle or between items
+		if not recipe and entity.previous_recipe then
+			local prev = entity.previous_recipe
+			local prevName = (type(prev) == "table" and prev.recipe) or prev
+			if prevName and prototypes.recipe[prevName] then
+				recipe = prototypes.recipe[prevName]
+			end
+		end
+
+		-- Check input slot (furnace_source) for items waiting to be processed (e.g. in recyclers)
+		if not recipe then
+			local sourceInv = entity.get_inventory(defines.inventory.furnace_source)
+			if sourceInv and sourceInv.valid and not sourceInv.is_empty() then
+				local contents = sourceInv.get_contents()
+				if contents then
+					for _, itemInfo in pairs(contents) do
+						local itemName = (type(itemInfo) == "table" and itemInfo.name) or itemInfo
+						if itemName then
+							local rName = itemName
+							if entity.name:find("recycler") then
+								rName = itemName .. "-recycling"
+							end
+							if prototypes.recipe[rName] then
+								recipe = prototypes.recipe[rName]
+								break
+							end
+						end
+					end
+				end
+			end
+		end
+
 		if recipe then
 			local recipeBonus = recipe.productivity_bonus or 0
 			ACTStorage.globalSliderStorage(playerName, recipe.name)
@@ -125,7 +162,7 @@ local function getRecipeFromFurnace(entity, playerName)
 end
 
 local function getRecipeFromFurnaceOutput(entity, playerName)
-	if entity.type:find("furnace") then
+	if entity.type:find("furnace") and not entity.name:find("recycler") then
 		local outputInv = entity.get_output_inventory()
 		if outputInv and outputInv.valid then
 			local contents = outputInv.get_contents()

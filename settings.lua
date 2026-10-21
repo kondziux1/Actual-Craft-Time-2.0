@@ -26,5 +26,11 @@ data:extend({
 		minimum_value = 1,
 		default_value = 5,
 		maximum_value = 10
+	},
+	{
+		type = "bool-setting",
+		name = "ACT2-show-quality-chance",
+		setting_type = "runtime-per-user",
+		default_value = true
 	}
 })
