@@ -1,4 +1,23 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.0
+Date: 2026-10-21
+  Features:
+    - Window is now draggable and remembers its position
+    - Floating draggable window is now the default
+    - Shows quality upgrade chances and expected upgraded rates when quality modules are installed
+    - Added a toggle button in the header to turn quality chance display on or off
+  Gui:
+    - Made recipe and item icons bigger
+    - Added drag bar with a close button
+    - Renamed window position settings to be easier to understand
+  Optimizations:
+    - Split huge control.lua into separate files and cleaned up the code
+    - Optimised the truncateNumber, conditionalDecimalIncrease and amountMaxMinAverage functions
+  Bugfixes:
+    - Improved recycler and furnace recipe detection so it doesn't lose recipe info between items
+    - Fixed lab speed and space science packs for 2.0 / Space Age
+    - Fixed empty product list fallback
+---------------------------------------------------------------------------------------------------
 Version: 0.7.0
 Date: 2025-05-02
   Bugfixes:
@@ -45,7 +64,7 @@ Date: 10/25/2024
 ---------------------------------------------------------------------------------------------------
 Version: 0.6.0
 Date: 10/25/2024
-  Update:
+  Changes:
     - Updated to work with factorio lua 2.0
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.8
