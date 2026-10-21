@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.1
+Date: 2026-10-22
+  Bugfixes:
+    - Correctly applied infinite productivity research (e.g. steel productivity) to furnace output rates
+    - Fixed crash when inspecting furnaces or recyclers with recipe prototypes (LuaRecipePrototype productivity_bonus error)
+    - Fixed Factorio 2.0 previous_recipe table crash in furnaces
+---------------------------------------------------------------------------------------------------
 Version: 0.8.0
 Date: 2026-10-21
   Features:

@@ -78,11 +78,25 @@ local function getEffects(entity)
 	return effects
 end
 
+local function getRecipeProductivityBonus(recipe, force)
+	if not recipe then return 0 end
+	if recipe.object_name == "LuaRecipe" then
+		return recipe.productivity_bonus or 0
+	end
+	if force and force.valid and force.recipes and recipe.name then
+		local ok, forceRecipe = pcall(function() return force.recipes[recipe.name] end)
+		if ok and forceRecipe and forceRecipe.valid and forceRecipe.object_name == "LuaRecipe" then
+			return forceRecipe.productivity_bonus or 0
+		end
+	end
+	return 0
+end
+
 local function getRecipeFromEntity(entity, playerName)
 	if entity.type:find("assembling%-machine") or entity.type:find("rocket%-silo") then
 		local recipe = entity.get_recipe()
 		if recipe then
-			local recipeBonus = recipe.productivity_bonus or 0
+			local recipeBonus = getRecipeProductivityBonus(recipe, entity.force)
 			local recipeProducts = copyProductsForWriteControl(recipe)
 			ACTStorage.globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
@@ -110,9 +124,13 @@ local function getRecipeFromFurnace(entity, playerName)
 		-- Fallback to previous recipe if idle or between items
 		if not recipe and entity.previous_recipe then
 			local prev = entity.previous_recipe
-			local prevName = (type(prev) == "table" and prev.recipe) or prev
-			if prevName and prototypes.recipe[prevName] then
-				recipe = prototypes.recipe[prevName]
+			local prevName = (type(prev) == "table" and (prev.name or prev.recipe)) or (type(prev) == "string" and prev) or nil
+			if type(prevName) == "string" then
+				if entity.force and entity.force.recipes[prevName] then
+					recipe = entity.force.recipes[prevName]
+				elseif prototypes.recipe[prevName] then
+					recipe = prototypes.recipe[prevName]
+				end
 			end
 		end
 
@@ -129,7 +147,10 @@ local function getRecipeFromFurnace(entity, playerName)
 							if entity.name:find("recycler") then
 								rName = itemName .. "-recycling"
 							end
-							if prototypes.recipe[rName] then
+							if entity.force and entity.force.recipes and entity.force.recipes[rName] then
+								recipe = entity.force.recipes[rName]
+								break
+							elseif prototypes.recipe[rName] then
 								recipe = prototypes.recipe[rName]
 								break
 							end
@@ -140,7 +161,13 @@ local function getRecipeFromFurnace(entity, playerName)
 		end
 
 		if recipe then
-			local recipeBonus = recipe.productivity_bonus or 0
+			if recipe.object_name ~= "LuaRecipe" and entity.force and entity.force.recipes and recipe.name then
+				local ok, forceRecipe = pcall(function() return entity.force.recipes[recipe.name] end)
+				if ok and forceRecipe and forceRecipe.valid then
+					recipe = forceRecipe
+				end
+			end
+			local recipeBonus = getRecipeProductivityBonus(recipe, entity.force)
 			ACTStorage.globalSliderStorage(playerName, recipe.name)
 			local effects = getEffects(entity)
 			local sec = recipe.energy / entity.crafting_speed
@@ -169,23 +196,31 @@ local function getRecipeFromFurnaceOutput(entity, playerName)
 			if contents then
 				for _, itemInfo in pairs(contents) do
 					local itemName = (type(itemInfo) == "table" and itemInfo.name) or itemInfo
-					if itemName and prototypes.recipe[itemName] then
-						local recipe = prototypes.recipe[itemName]
-						ACTStorage.globalSliderStorage(playerName, recipe.name)
-						local effects = getEffects(entity)
-						local sec = recipe.energy / entity.crafting_speed
-						local isCapped = (sec < (1 / 60))
-						local recipeProducts = copyProductsForWriteControl(recipe)
+					if itemName then
+						local recipe = nil
+						if entity.force and entity.force.recipes and entity.force.recipes[itemName] then
+							recipe = entity.force.recipes[itemName]
+						elseif prototypes.recipe[itemName] then
+							recipe = prototypes.recipe[itemName]
+						end
+						if recipe then
+							local recipeBonus = getRecipeProductivityBonus(recipe, entity.force)
+							ACTStorage.globalSliderStorage(playerName, recipe.name)
+							local effects = getEffects(entity)
+							local sec = recipe.energy / entity.crafting_speed
+							local isCapped = (sec < (1 / 60))
+							local recipeProducts = copyProductsForWriteControl(recipe)
 
-						return {
-							name = recipe.name,
-							localised_name = recipe.localised_name,
-							ingredients = ACTIngredient.expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
-							products = ACTProduct.expandProducts(recipeProducts, sec, playerName, effects, recipe.name, 0),
-							seconds = sec,
-							effects = effects,
-							is_capped = isCapped
-						}
+							return {
+								name = recipe.name,
+								localised_name = recipe.localised_name,
+								ingredients = ACTIngredient.expandIngredients(recipe.ingredients, sec, playerName, recipe.name),
+								products = ACTProduct.expandProducts(recipeProducts, sec, playerName, effects, recipe.name, recipeBonus),
+								seconds = sec,
+								effects = effects,
+								is_capped = isCapped
+							}
+						end
 					end
 				end
 			end
