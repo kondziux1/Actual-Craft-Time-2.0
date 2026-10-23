@@ -5,6 +5,40 @@ local ACTStorage = require("utils.storage")
 
 local ACTProduct = {}
 
+local function getProductProbability(product)
+	if not product then return 1 end
+	local prob = 1
+	local hasProbability = false
+
+	-- Factorio 2.1+: independent_probability replaces probability
+	if product.independent_probability ~= nil then
+		prob = prob * product.independent_probability
+		hasProbability = true
+	end
+
+	-- Factorio 2.1+: shared_probability defines range [min, max)
+	if product.shared_probability ~= nil then
+		hasProbability = true
+		if type(product.shared_probability) == "table" then
+			local sMin = product.shared_probability.min or 0
+			local sMax = product.shared_probability.max or 1
+			prob = prob * math.max(0, sMax - sMin)
+		elseif type(product.shared_probability) == "number" then
+			prob = prob * product.shared_probability
+		end
+	end
+
+	-- Factorio 2.0 fallback
+	if not hasProbability then
+		local ok, p = pcall(function() return product.probability end)
+		if ok and p ~= nil then
+			prob = p
+		end
+	end
+
+	return prob
+end
+
 function ACTProduct.expandProducts(products, sec, playerName, effects, recipeName, recipeBonus)
 	if not playerName or not products then return {} end
 	local productTable = {}
@@ -31,7 +65,7 @@ function ACTProduct.expandProducts(products, sec, playerName, effects, recipeNam
 
 	for k, product in pairs(products) do
 		local amount = product.amount or ACTMath.amountMaxMinAverage(product) or 1
-		local probability = product.probability or 1
+		local probability = getProductProbability(product)
 		local expectedAmount = probability * amount
 
 		local IPS_main = expectedAmount / craftTime
@@ -42,7 +76,7 @@ function ACTProduct.expandProducts(products, sec, playerName, effects, recipeNam
 			name = product.name,
 			type = product.type or "item",
 			amount = amount,
-			probability = product.probability,
+			probability = probability,
 			localised_name = ACTLocalisation.getLocalisedName(product.name),
 			ips = IPS,
 			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),
@@ -102,7 +136,7 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 
 	for k, product in pairs(products) do
 		local amount = ACTMath.amountFromPumpjack(entity) or product.amount or ACTMath.amountMaxMinAverage(product) or 1
-		local probability = product.probability or 1
+		local probability = getProductProbability(product)
 		local expectedAmount = probability * amount
 
 		local IPS_main = expectedAmount / craftTime
@@ -113,7 +147,7 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 			name = product.name,
 			type = product.type or "item",
 			amount = amount,
-			probability = product.probability,
+			probability = probability,
 			localised_name = ACTLocalisation.getLocalisedName(product.name),
 			ips = IPS,
 			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),

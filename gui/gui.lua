@@ -515,6 +515,28 @@ local function updateRadio(currentGuiSection)
 	guiVisibleAttrChild(currentGuiSection, true)
 end
 
+local function getQualityTiersChances(qualityBonus, playerForce)
+	if prototypes.quality and prototypes.quality["normal"] and prototypes.quality["normal"].get_roll_chances then
+		local ok, chances = pcall(function()
+			return prototypes.quality["normal"].get_roll_chances(qualityBonus, playerForce)
+		end)
+		if ok and chances and type(chances) == "table" then
+			return {
+				uncommon = chances["uncommon"] or 0,
+				rare = chances["rare"] or 0,
+				epic = chances["epic"] or 0,
+				legendary = chances["legendary"] or 0
+			}
+		end
+	end
+	return {
+		uncommon = qualityBonus * 0.90,
+		rare = qualityBonus * 0.09,
+		epic = qualityBonus * 0.009,
+		legendary = qualityBonus * 0.001
+	}
+end
+
 local function updateRecipe(currentGuiSection, tooltip, message, spritePath, qualityBonus, showQuality)
 	guiVisibleAttrChild(currentGuiSection, true)
 	guiDescendFind(currentGuiSection, tooltip, message, spritePath)
@@ -528,12 +550,14 @@ local function updateRecipe(currentGuiSection, tooltip, message, spritePath, qua
 		if qualityBonus and qualityBonus > 0 and showQuality then
 			local qPct = ACTMath.truncateNumber(qualityBonus * 100, 1)
 			qLabel.caption = { '', "[color=160,225,120]★ Quality: +", tostring(qPct), "%[/color]" }
+			local player = currentGuiSection.gui and currentGuiSection.gui.player
+			local tiers = getQualityTiersChances(qualityBonus, player and player.valid and player.force)
 			local breakdownStr = "Quality module bonus: +" .. tostring(qPct) .. "%\n" ..
 				"Chance to upgrade product tier:\n" ..
-				"  • Uncommon: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 90, 2)) .. "%\n" ..
-				"  • Rare: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 9, 2)) .. "%\n" ..
-				"  • Epic: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 0.9, 3)) .. "%\n" ..
-				"  • Legendary: ~" .. tostring(ACTMath.truncateNumber(qualityBonus * 0.1, 4)) .. "%"
+				"  • Uncommon: ~" .. tostring(ACTMath.truncateNumber(tiers.uncommon * 100, 2)) .. "%\n" ..
+				"  • Rare: ~" .. tostring(ACTMath.truncateNumber(tiers.rare * 100, 2)) .. "%\n" ..
+				"  • Epic: ~" .. tostring(ACTMath.truncateNumber(tiers.epic * 100, 3)) .. "%\n" ..
+				"  • Legendary: ~" .. tostring(ACTMath.truncateNumber(tiers.legendary * 100, 4)) .. "%"
 			qLabel.tooltip = breakdownStr
 			qLabel.visible = true
 		else
@@ -604,7 +628,8 @@ local function updateItem(recipe, items, current_section, minOrSec)
 			local timeSuffix = (minOrSec.value == 1) and "/sec" or "/min"
 
 			-- Base rate in items per second for hourly projections
-			local basePerSec = (v.ips * sliderVal) * v.quality_chance
+			local basePerSec = (v.ips * sliderVal)
+			local tiers = getQualityTiersChances(v.quality_chance, player.force)
 
 			if qLabel and qLabel.valid then
 				qLabel.visible = true
@@ -620,13 +645,13 @@ local function updateItem(recipe, items, current_section, minOrSec)
 				"Quality upgrade chance: +" .. qPercent .. "\n" ..
 				"  Base quality: " .. tostring(ACTMath.truncateNumber(baseRate, 2)) .. timeSuffix .. " (" .. tostring(ACTMath.truncateNumber((1 - v.quality_chance) * 100, 1)) .. "%)\n" ..
 				"  Upgraded (★): " .. tostring(ACTMath.truncateNumber(upgradedRate, 2)) .. timeSuffix .. " (" .. qPercent .. ")\n" ..
-				"    • Uncommon: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.9, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.90) .. ")\n" ..
-				"    • Rare: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.09, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.09) .. ")\n" ..
-				"    • Epic: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.009, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.009) .. ")\n" ..
-				"    • Legendary: ~" .. tostring(ACTMath.truncateNumber(upgradedRate * 0.001, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * 0.001) .. ")"
+				"    • Uncommon: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.uncommon, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.uncommon) .. ")\n" ..
+				"    • Rare: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.rare, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.rare) .. ")\n" ..
+				"    • Epic: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.epic, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.epic) .. ")\n" ..
+				"    • Legendary: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.legendary, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.legendary) .. ")"
 
 			if v.probability and v.probability < 1 then
-				tipText = tipText .. "\nRecycling return: " .. tostring(v.probability * 100) .. "%"
+				tipText = tipText .. "\nProbability / return: " .. tostring(ACTMath.truncateNumber(v.probability * 100, 1)) .. "%"
 			end
 
 			local fullTip = { "", v.localised_name or v.name, tipText }
@@ -639,7 +664,7 @@ local function updateItem(recipe, items, current_section, minOrSec)
 				qLabel.visible = false
 			end
 			if v.probability and v.probability < 1 then
-				guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = (v.probability * 100) .. "%"
+				guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = tostring(ACTMath.truncateNumber(v.probability * 100, 1)) .. "%"
 			else
 				guiElementInfoWrap_K.itemIPSWrap.IPSLabel.tooltip = ""
 			end

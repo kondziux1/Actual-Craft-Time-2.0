@@ -134,9 +134,10 @@ local function getRecipeFromFurnace(entity, playerName)
 			end
 		end
 
-		-- Check input slot (furnace_source) for items waiting to be processed (e.g. in recyclers)
+		-- Check input slot (furnace_source / crafter_input) for items waiting to be processed (e.g. in recyclers)
 		if not recipe then
-			local sourceInv = entity.get_inventory(defines.inventory.furnace_source)
+			local invId = defines.inventory.crafter_input or defines.inventory.furnace_source
+			local sourceInv = invId and entity.get_inventory(invId)
 			if sourceInv and sourceInv.valid and not sourceInv.is_empty() then
 				local contents = sourceInv.get_contents()
 				if contents then
@@ -190,7 +191,8 @@ end
 
 local function getRecipeFromFurnaceOutput(entity, playerName)
 	if entity.type:find("furnace") and not entity.name:find("recycler") then
-		local outputInv = entity.get_output_inventory()
+		local invId = defines.inventory.crafter_output or defines.inventory.furnace_result
+		local outputInv = (entity.get_output_inventory and entity.get_output_inventory()) or (invId and entity.get_inventory(invId))
 		if outputInv and outputInv.valid then
 			local contents = outputInv.get_contents()
 			if contents then

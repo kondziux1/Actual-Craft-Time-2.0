@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.2
+Date: 2026-10-23
+  Features:
+    - Migrated to Factorio 2.1
+    - Added support for Factorio 2.1 independent_probability and shared_probability product definitions
+    - Added support for Factorio 2.1 get_roll_chances API for exact force-aware quality roll calculations
+  Bugfixes:
+    - Updated furnace and assembler inventory defines to crafter_input and crafter_output (furnace_source was removed in 2.1)
+---------------------------------------------------------------------------------------------------
 Version: 0.8.1
 Date: 2026-10-22
   Bugfixes:
