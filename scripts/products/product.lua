@@ -134,6 +134,11 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 
 	local craftTime = math.max(sec, 1 / 60)
 
+	local stackOverride = nil
+	if entity and entity.valid and entity.name and entity.name:find("big%-mining%-drill") then
+		stackOverride = ACTBelts.getForceBeltStackSize(playerName)
+	end
+
 	for k, product in pairs(products) do
 		local amount = ACTMath.amountFromPumpjack(entity) or product.amount or ACTMath.amountMaxMinAverage(product) or 1
 		local probability = getProductProbability(product)
@@ -150,7 +155,7 @@ function ACTProduct.expandProductsMines(products, sec, playerName, effects, reci
 			probability = probability,
 			localised_name = ACTLocalisation.getLocalisedName(product.name),
 			ips = IPS,
-			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName),
+			pbar = ACTBelts.pbarTraits(IPS * sliderValue, playerName, stackOverride),
 			quality_chance = qualityBonus,
 		}
 		productTable[k] = itemEntry

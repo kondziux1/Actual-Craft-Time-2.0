@@ -69,6 +69,17 @@ local function spriteCheck(player, spritePath)
 	return "utility/questionmark"
 end
 
+local function applyProgressBarStyle(bar)
+	if not bar or not bar.valid then return end
+	local ok = pcall(function() bar.style = "ACT2_progressbar" end)
+	if not ok then
+		pcall(function() bar.style = "achievement_progressbar" end)
+	end
+	pcall(function() bar.style.height = 20 end)
+	pcall(function() bar.style.bar_width = 20 end)
+	pcall(function() bar.style.horizontal_align = "center" end)
+end
+
 local function addNextInfoWrap(parent_section, i)
 	local player = game.players[parent_section.player_index]
 	if not player or not player.valid then return end
@@ -107,12 +118,13 @@ local function addNextInfoWrap(parent_section, i)
 		caption = "",
 		visible = false
 	}
-	wrap.add {
+	local bar = wrap.add {
 		type = "progressbar",
 		name = "item_Bar",
 		tooltip = "",
 		visible = false
 	}
+	applyProgressBarStyle(bar)
 end
 
 local function guiDescendFind(currentGuiSection, tooltip, message, spritePath)
@@ -249,6 +261,8 @@ local function setupGui(player)
 		title_pusher.drag_target = main_frame
 	end
 
+
+
 	if script.active_mods["quality"] then
 		local showQuality = ACTStorage.getQualityToggle(player.name)
 		local qSprite = "utility/slot_icon_module"
@@ -336,58 +350,76 @@ local function setupGui(player)
 		visible = false
 	}
 
-	-- Radio buttons
-	assembler_group.recipeRadioWrap.add {
+	-- Time mode section (Seconds / Minutes / Ticks cycle button)
+	local time_section = assembler_group.recipeRadioWrap.add {
 		type = "flow",
-		name = "radioSection",
+		name = "timeSection",
+		direction = "vertical",
+		visible = false
+	}
+	time_section.style.top_padding = 4
+	time_section.style.bottom_padding = 2
+
+	local time_btn = time_section.add {
+		type = "button",
+		name = "ACT2_time_mode",
+		caption = { "captions.time_mode_second" },
+		tooltip = "",
+		visible = false
+	}
+	pcall(function() time_btn.style = "ACT2_time_button" end)
+
+	-- Belt stack section (Option B: [-] 4x [+])
+	local stack_section = assembler_group.recipeRadioWrap.add {
+		type = "flow",
+		name = "stackSection",
+		direction = "vertical",
+		visible = false
+	}
+	stack_section.style.top_padding = 6
+
+	stack_section.add {
+		type = "label",
+		name = "stackLabel",
+		caption = "Belt stack",
+		tooltip = { "tooltips.ACT2_belt_stack_desc" },
+		visible = false
+	}
+
+	local stackControlFlow = stack_section.add {
+		type = "flow",
+		name = "stackControlFlow",
 		direction = "horizontal",
 		visible = false
 	}
+	stackControlFlow.style.vertical_align = "center"
+	stackControlFlow.style.horizontal_spacing = 6
 
-	local radio_section = assembler_group.recipeRadioWrap.radioSection
-
-	radio_section.add {
-		type = "flow",
-		name = "radioLables",
-		direction = "vertical",
+	stackControlFlow.add {
+		type = "button",
+		name = "ACT2_stack_dec",
+		caption = "-",
+		style = "ACT2_buttons",
+		tooltip = { "tooltips.ACT2_stack_dec" },
 		visible = false
 	}
 
-	radio_section.add {
-		type = "flow",
-		name = "radioButtons",
-		direction = "vertical",
-		visible = false,
-		style = "ACT2_vertical_flow"
-	}
-
-	radio_section.radioLables.add {
+	local stackValueLabel = stackControlFlow.add {
 		type = "label",
-		name = "labelTimeSecond",
-		caption = "Seconds",
-		tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' },
+		name = "stackValueLabel",
+		caption = "4x",
+		style = "bold_label",
+		tooltip = { "tooltips.ACT2_belt_stack_desc" },
 		visible = false
 	}
-	radio_section.radioButtons.add {
-		type = "radiobutton",
-		name = "ACTTimeSecond",
-		tooltip = { 'controls.ACT2_IPS_IPM_T', 'seconds' },
-		state = true,
-		visible = false
-	}
+	stackValueLabel.style.horizontal_align = "center"
 
-	radio_section.radioLables.add {
-		type = "label",
-		name = "labelTimeMinute",
-		caption = "Minutes",
-		tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' },
-		visible = false
-	}
-	radio_section.radioButtons.add {
-		type = "radiobutton",
-		name = "ACTTimeMinute",
-		tooltip = { 'controls.ACT2_IPS_IPM_T', 'minutes' },
-		state = false,
+	stackControlFlow.add {
+		type = "button",
+		name = "ACT2_stack_inc",
+		caption = "+",
+		style = "ACT2_buttons",
+		tooltip = { "tooltips.ACT2_stack_inc" },
 		visible = false
 	}
 
@@ -511,8 +543,19 @@ end
 
 ACTGui.setupGui = setupGui
 
-local function updateRadio(currentGuiSection)
+local function updateTimeMode(currentGuiSection, playerName)
+	if not currentGuiSection or not currentGuiSection.valid then return end
 	guiVisibleAttrChild(currentGuiSection, true)
+	currentGuiSection.visible = true
+
+	local mode = ACTStorage.getTimeMode(playerName)
+	local traits = ACTMath.getTimeModeTraits(mode)
+	local btn = currentGuiSection.ACT2_time_mode
+	if btn and btn.valid then
+		btn.caption = { "captions.time_mode_" .. mode }
+		btn.tooltip = { "tooltips.ACT2_time_mode_desc", { "captions.time_mode_" .. mode }, { "captions.time_mode_" .. traits.nextMode } }
+		btn.visible = true
+	end
 end
 
 local function getQualityTiersChances(qualityBonus, playerForce)
@@ -614,8 +657,9 @@ local function updateItem(recipe, items, current_section, minOrSec)
 		end
 
 		local totalRate = v.ips * sliderVal * minOrSec.value
+		local decimals = (minOrSec.mode == "tick") and ACTMath.conditionalDecimalIncrease(totalRate, 3) or ACTMath.conditionalDecimalIncrease(totalRate, 2)
 		guiElementInfoWrap_K.itemIPSWrap.IPSLabel.caption = { '',
-			ACTMath.truncateNumber(totalRate, 2),
+			ACTMath.truncateNumber(totalRate, decimals),
 			minOrSec.time
 		}
 
@@ -625,7 +669,7 @@ local function updateItem(recipe, items, current_section, minOrSec)
 			local upgradedRate = totalRate * v.quality_chance
 			local baseRate = totalRate * (1 - v.quality_chance)
 			local qPercent = tostring(ACTMath.truncateNumber(v.quality_chance * 100, 1)) .. "%"
-			local timeSuffix = (minOrSec.value == 1) and "/sec" or "/min"
+			local timeSuffix = minOrSec.timeSuffix or ((minOrSec.value == 1) and "/sec" or "/min")
 
 			-- Base rate in items per second for hourly projections
 			local basePerSec = (v.ips * sliderVal)
@@ -635,20 +679,20 @@ local function updateItem(recipe, items, current_section, minOrSec)
 				qLabel.visible = true
 				qLabel.caption = { '',
 					" [color=160,225,120](★ ",
-					ACTMath.truncateNumber(upgradedRate, 2),
+					ACTMath.truncateNumber(upgradedRate, decimals),
 					minOrSec.time,
 					")[/color]"
 				}
 			end
 
-			local tipText = "\nTotal: " .. tostring(ACTMath.truncateNumber(totalRate, 2)) .. timeSuffix .. "\n" ..
+			local tipText = "\nTotal: " .. tostring(ACTMath.truncateNumber(totalRate, decimals)) .. timeSuffix .. "\n" ..
 				"Quality upgrade chance: +" .. qPercent .. "\n" ..
-				"  Base quality: " .. tostring(ACTMath.truncateNumber(baseRate, 2)) .. timeSuffix .. " (" .. tostring(ACTMath.truncateNumber((1 - v.quality_chance) * 100, 1)) .. "%)\n" ..
-				"  Upgraded (★): " .. tostring(ACTMath.truncateNumber(upgradedRate, 2)) .. timeSuffix .. " (" .. qPercent .. ")\n" ..
-				"    • Uncommon: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.uncommon, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.uncommon) .. ")\n" ..
-				"    • Rare: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.rare, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.rare) .. ")\n" ..
-				"    • Epic: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.epic, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.epic) .. ")\n" ..
-				"    • Legendary: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.legendary, 2)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.legendary) .. ")"
+				"  Base quality: " .. tostring(ACTMath.truncateNumber(baseRate, decimals)) .. timeSuffix .. " (" .. tostring(ACTMath.truncateNumber((1 - v.quality_chance) * 100, 1)) .. "%)\n" ..
+				"  Upgraded (★): " .. tostring(ACTMath.truncateNumber(upgradedRate, decimals)) .. timeSuffix .. " (" .. qPercent .. ")\n" ..
+				"    • Uncommon: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.uncommon, decimals)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.uncommon) .. ")\n" ..
+				"    • Rare: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.rare, decimals)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.rare) .. ")\n" ..
+				"    • Epic: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.epic, decimals)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.epic) .. ")\n" ..
+				"    • Legendary: ~" .. tostring(ACTMath.truncateNumber(totalRate * tiers.legendary, decimals)) .. timeSuffix .. " (" .. formatHourlyRate(basePerSec * tiers.legendary) .. ")"
 
 			if v.probability and v.probability < 1 then
 				tipText = tipText .. "\nProbability / return: " .. tostring(ACTMath.truncateNumber(v.probability * 100, 1)) .. "%"
@@ -671,10 +715,33 @@ local function updateItem(recipe, items, current_section, minOrSec)
 		end
 
 		if v.type ~= "fluid" and v.pbar then
-			guiElementInfoWrap_K.item_Bar.visible = true
-			guiElementInfoWrap_K.item_Bar.tooltip = v.pbar.tool
-			guiElementInfoWrap_K.item_Bar.style.color = v.pbar.color
-			guiElementInfoWrap_K.item_Bar.value = v.pbar.value
+			if guiElementInfoWrap_K.barFlow and guiElementInfoWrap_K.barFlow.valid then
+				guiElementInfoWrap_K.barFlow.destroy()
+			end
+
+			local bar = guiElementInfoWrap_K.item_Bar
+			if not bar or not bar.valid then
+				bar = guiElementInfoWrap_K.add {
+					type = "progressbar",
+					name = "item_Bar",
+					tooltip = "",
+					visible = false
+				}
+			end
+
+			applyProgressBarStyle(bar)
+			bar.visible = true
+			bar.tooltip = v.pbar.tool
+			bar.style.color = v.pbar.color
+			bar.value = v.pbar.value
+			bar.caption = v.pbar.caption or ""
+		else
+			if guiElementInfoWrap_K.barFlow and guiElementInfoWrap_K.barFlow.valid then
+				guiElementInfoWrap_K.barFlow.destroy()
+			end
+			if guiElementInfoWrap_K.item_Bar and guiElementInfoWrap_K.item_Bar.valid then
+				guiElementInfoWrap_K.item_Bar.visible = false
+			end
 		end
 		guiElementInfoWrap_K.itemIPSWrap.IPSLabel.visible = true
 	end
@@ -703,6 +770,25 @@ local function toggleRadio(element)
 				child.state = not child.state
 			end
 		end
+	end
+end
+
+local function updateBeltStack(currentGuiSection, playerName)
+	if not currentGuiSection or not currentGuiSection.valid then return end
+	local maxBeltStack = ACTBelts.getForceBeltStackSize(playerName)
+	if maxBeltStack <= 1 then
+		currentGuiSection.visible = false
+		return
+	end
+
+	guiVisibleAttrChild(currentGuiSection, true)
+	currentGuiSection.visible = true
+
+	local currentStack = ACTStorage.getBeltStackValue(playerName, maxBeltStack)
+	local flow = currentGuiSection.stackControlFlow
+	if flow and flow.valid and flow.stackValueLabel and flow.stackValueLabel.valid then
+		flow.stackValueLabel.caption = tostring(currentStack) .. "x"
+		flow.stackValueLabel.tooltip = { "tooltips.ACT2_belt_stack_desc", tostring(currentStack), tostring(maxBeltStack) }
 	end
 end
 
@@ -742,6 +828,9 @@ local function run(event)
 				child.visible = true
 			end
 		end
+		if frame.title_bar.ACT2_belt_stack_toggle and frame.title_bar.ACT2_belt_stack_toggle.valid then
+			frame.title_bar.ACT2_belt_stack_toggle.destroy()
+		end
 		if frame.title_bar.ACT2_quality_toggle and frame.title_bar.ACT2_quality_toggle.valid then
 			local showQuality = ACTStorage.getQualityToggle(player.name)
 			frame.title_bar.ACT2_quality_toggle.toggled = showQuality
@@ -756,6 +845,12 @@ local function run(event)
 	if not recipe then
 		assembler_group.visible = true
 		assembler_group.recipeRadioWrap.visible = true
+		if assembler_group.recipeRadioWrap.timeSection and assembler_group.recipeRadioWrap.timeSection.valid then
+			assembler_group.recipeRadioWrap.timeSection.visible = false
+		end
+		if assembler_group.recipeRadioWrap.stackSection and assembler_group.recipeRadioWrap.stackSection.valid then
+			assembler_group.recipeRadioWrap.stackSection.visible = false
+		end
 		updateRecipe(assembler_group.recipeRadioWrap.recipeSection,
 			{ 'tooltips.reset', entity.localised_name },
 			{ 'captions.no-recipe' },
@@ -767,8 +862,32 @@ local function run(event)
 
 	ACTStorage.globalSliderStorage(player.name, recipe.name)
 
-	local radioSecond = assembler_group.recipeRadioWrap.radioSection.radioButtons.ACTTimeSecond
-	local minOrSec = ACTMath.determineMinOrSec(radioSecond)
+	if assembler_group.recipeRadioWrap.radioSection and assembler_group.recipeRadioWrap.radioSection.valid then
+		assembler_group.recipeRadioWrap.radioSection.destroy()
+	end
+
+	if not assembler_group.recipeRadioWrap.timeSection then
+		local time_section = assembler_group.recipeRadioWrap.add {
+			type = "flow",
+			name = "timeSection",
+			direction = "vertical",
+			visible = false
+		}
+		time_section.style.top_padding = 4
+		time_section.style.bottom_padding = 2
+
+		local time_btn = time_section.add {
+			type = "button",
+			name = "ACT2_time_mode",
+			caption = { "captions.time_mode_second" },
+			tooltip = "",
+			visible = false
+		}
+		pcall(function() time_btn.style = "ACT2_time_button" end)
+	end
+
+	local timeMode = ACTStorage.getTimeMode(player.name)
+	local minOrSec = ACTMath.getTimeModeTraits(timeMode)
 
 	local qualityBonus = (recipe.effects and recipe.effects.quality and recipe.effects.quality.bonus) or 0
 	local showQuality = ACTStorage.getQualityToggle(player.name)
@@ -776,12 +895,68 @@ local function run(event)
 	updateRecipe(assembler_group.recipeRadioWrap.recipeSection,
 		{ 'tooltips.reset', recipe.localised_name },
 		{ minOrSec.captions, ACTMath.truncateNumber(math.max(recipe.seconds, 1 / 60) / minOrSec.value,
-			ACTMath.conditionalDecimalIncrease(recipe.seconds, 2)) },
+			(minOrSec.mode == "tick" and 1 or ACTMath.conditionalDecimalIncrease(recipe.seconds, 2))) },
 		spriteCheck(player, recipe.name),
 		qualityBonus,
 		showQuality)
 
-	updateRadio(assembler_group.recipeRadioWrap.radioSection)
+	if not assembler_group.recipeRadioWrap.stackSection then
+		local stack_section = assembler_group.recipeRadioWrap.add {
+			type = "flow",
+			name = "stackSection",
+			direction = "vertical",
+			visible = false
+		}
+		stack_section.style.top_padding = 6
+
+		stack_section.add {
+			type = "label",
+			name = "stackLabel",
+			caption = "Belt stack",
+			tooltip = { "tooltips.ACT2_belt_stack_desc" },
+			visible = false
+		}
+
+		local stackControlFlow = stack_section.add {
+			type = "flow",
+			name = "stackControlFlow",
+			direction = "horizontal",
+			visible = false
+		}
+		stackControlFlow.style.vertical_align = "center"
+		stackControlFlow.style.horizontal_spacing = 6
+
+		stackControlFlow.add {
+			type = "button",
+			name = "ACT2_stack_dec",
+			caption = "-",
+			style = "ACT2_buttons",
+			tooltip = { "tooltips.ACT2_stack_dec" },
+			visible = false
+		}
+
+		local stackValueLabel = stackControlFlow.add {
+			type = "label",
+			name = "stackValueLabel",
+			caption = "4x",
+			style = "bold_label",
+			tooltip = { "tooltips.ACT2_belt_stack_desc" },
+			visible = false
+		}
+			stackValueLabel.style.horizontal_align = "center"
+
+		stackControlFlow.add {
+			type = "button",
+			name = "ACT2_stack_inc",
+			caption = "+",
+			style = "ACT2_buttons",
+			tooltip = { "tooltips.ACT2_stack_inc" },
+			visible = false
+		}
+	end
+
+	updateTimeMode(assembler_group.recipeRadioWrap.timeSection, player.name)
+	updateBeltStack(assembler_group.recipeRadioWrap.stackSection, player.name)
 
 	updateItem(recipe, recipe.ingredients, assembler_group.ingredientsSection, minOrSec)
 
@@ -928,6 +1103,60 @@ local function playerClickedGui(event)
 		return
 	end
 
+	if elementName == "ACT2_time_mode" then
+		local playerIndex = event.player_index
+		local player = game.players[playerIndex]
+		if not player or not player.valid then return end
+
+		ACTStorage.cycleTimeMode(player.name)
+
+		if player.opened and player.opened.valid and ACTRecipe.desiredEntity(player.opened) then
+			local refreshEvent = {
+				player_index = playerIndex,
+				entity = player.opened,
+				gui_type = defines.gui_type.entity
+			}
+			run(refreshEvent)
+		end
+		return
+	end
+
+	if elementName == "ACT2_stack_dec" or elementName == "ACT2_stack_inc" or elementName == "stackValueLabel" then
+		local playerIndex = event.player_index
+		local player = game.players[playerIndex]
+		if not player or not player.valid then return end
+
+		local maxBeltStack = ACTBelts.getForceBeltStackSize(player.name)
+		if maxBeltStack <= 1 then return end
+
+		local currentVal = ACTStorage.getBeltStackValue(player.name, maxBeltStack)
+		local newVal = currentVal
+
+		if elementName == "ACT2_stack_dec" then
+			newVal = currentVal - 1
+			if newVal < 1 then
+				newVal = maxBeltStack
+			end
+		else
+			newVal = currentVal + 1
+			if newVal > maxBeltStack then
+				newVal = 1
+			end
+		end
+
+		ACTStorage.setBeltStackValue(player.name, newVal)
+
+		if player.opened and player.opened.valid and ACTRecipe.desiredEntity(player.opened) then
+			local refreshEvent = {
+				player_index = playerIndex,
+				entity = player.opened,
+				gui_type = defines.gui_type.entity
+			}
+			run(refreshEvent)
+		end
+		return
+	end
+
 	if elementName == "ACT2_quality_toggle" then
 		local playerIndex = event.player_index
 		local player = game.players[playerIndex]
@@ -1000,16 +1229,15 @@ local function customInputForRadioButton(event)
 	local player = game.players[playerIndex]
 	if not player or not player.valid then return end
 
-	local frame = findFrame(player)
-	if not frame or not frame.valid then
-		frame = setupGui(player)
-	end
+	ACTStorage.cycleTimeMode(player.name)
 
-	if frame and frame.assemblerGroup and frame.assemblerGroup.recipeRadioWrap and
-		frame.assemblerGroup.recipeRadioWrap.radioSection and
-		frame.assemblerGroup.recipeRadioWrap.radioSection.radioButtons then
-		event.element = frame.assemblerGroup.recipeRadioWrap.radioSection.radioButtons
-		radiobutton(event)
+	if player.opened and player.opened.valid and ACTRecipe.desiredEntity(player.opened) then
+		local refreshEvent = {
+			player_index = playerIndex,
+			entity = player.opened,
+			gui_type = defines.gui_type.entity
+		}
+		run(refreshEvent)
 	end
 end
 

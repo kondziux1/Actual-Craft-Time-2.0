@@ -1,6 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.8.3
+Date: 2026-10-30
+  Features:
+    - Added Conveyor Belt Stacking calculations based on force research (Stack Inserter & Transport Belt Capacity)
+    - Added looping [-] and [+] belt stack selector (1x - 4x) in the left panel
+    - Replaced Seconds / Minutes radio buttons with a cycle button supporting Seconds (/sec), Minutes (/min), and Ticks (/tick)
+    - Added item/tick display mode with high precision for micro throughput analysis
+    - Enlarged progress bars with directly visible percentage and stacking multiplier (e.g. 75% (x4), 2.5 belts (x4))
+    - Progress bar tooltips provide full detailed belt breakdown and comparison between stacked and unstacked throughput
+    - Automatic stacked throughput calculation for Big Mining Drills
+    - Added runtime setting to configure default belt stacking mode
+---------------------------------------------------------------------------------------------------
 Version: 0.8.2
-Date: 2026-10-23
+Date: 2026-10-25
   Features:
     - Migrated to Factorio 2.1
     - Added support for Factorio 2.1 independent_probability and shared_probability product definitions

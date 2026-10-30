@@ -53,3 +53,31 @@ default_style.ACT2_vertical_flow = {
   vertical_spacing = 10,
   top_padding = 6,
 }
+-- Progress bar style with embedded text and thicker bar for belt throughput
+default_style.ACT2_progressbar = {
+  type = "progressbar_style",
+  parent = "progressbar",
+
+  height = 20,
+  bar_width = 20,
+  embed_text_in_bar = true,
+
+  font = "default-bold",
+  font_color = {1, 1, 1},
+  filled_font_color = {0, 0, 0},
+
+  horizontal_align = "center",
+  vertical_align = "center",
+}
+-- Time mode cycle button style (Seconds / Minutes / Ticks)
+default_style.ACT2_time_button = {
+  type = "button_style",
+  parent = "button",
+
+  font = "default-bold",
+  height = 24,
+  left_padding = 8,
+  right_padding = 8,
+  top_padding = 0,
+  bottom_padding = 0,
+}

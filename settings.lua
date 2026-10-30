@@ -32,5 +32,11 @@ data:extend({
 		name = "ACT2-show-quality-chance",
 		setting_type = "runtime-per-user",
 		default_value = true
+	},
+	{
+		type = "bool-setting",
+		name = "ACT2-belt-stack-mode",
+		setting_type = "runtime-per-user",
+		default_value = true
 	}
 })
